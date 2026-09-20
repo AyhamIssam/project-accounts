@@ -19,51 +19,64 @@
 // المفاتيح (بالإنجليزي) هي نفسها المستخدمة في js/app.js، لا تغيّرها بدون تعديل الموقع.
 const SCHEMA = {
   contractor: {
-    name: 'المقاول',
+    name: 'Contractor',
     // kind: حساب أو خصم (مثل الضمان الاجتماعي لموظفي المقاول). الخصم قد يكون بدون موقع (عام).
-    cols: [['id', 'المعرّف'], ['date', 'التاريخ'], ['kind', 'النوع'], ['site', 'الموقع'],
-           ['amount', 'المبلغ'], ['label', 'بند الخصم'], ['notes', 'إضافة / تبرير'], ['created', 'وقت الإدخال']],
+    cols: [['id', 'ID'], ['date', 'Date'], ['kind', 'Type'], ['site', 'Site'],
+           ['amount', 'Amount'], ['label', 'Deduction Item'], ['notes', 'Details / Notes'], ['created', 'Created At']],
     text: ['id', 'date', 'kind', 'site', 'label', 'notes', 'created'],
     hideId: true
   },
   staff: {
-    name: 'المهندس والفنيين',
-    cols: [['id', 'المعرّف'], ['person', 'الاسم'], ['role', 'الصفة'], ['kind', 'نوع التسجيل'],
-           ['date', 'التاريخ'], ['sites', 'المواقع'], ['amount', 'المبلغ'], ['notes', 'ملاحظات'],
-           ['created', 'وقت الإدخال']],
+    name: 'Staff',
+    cols: [['id', 'ID'], ['person', 'Name'], ['role', 'Role'], ['kind', 'Entry Type'],
+           ['date', 'Date'], ['sites', 'Sites'], ['amount', 'Amount'], ['notes', 'Notes'],
+           ['created', 'Created At']],
     text: ['id', 'person', 'role', 'kind', 'date', 'sites', 'notes', 'created'],
     hideId: true
   },
   car: {
-    name: 'السيارة',
-    cols: [['id', 'المعرّف'], ['date', 'التاريخ'], ['amount', 'المبلغ'], ['scopeType', 'النطاق'],
-           ['sites', 'المواقع'], ['month', 'الشهر'], ['person', 'مرتبطة بشخص (اختياري)'],
-           ['notes', 'ملاحظات'], ['created', 'وقت الإدخال']],
+    name: 'Car',
+    cols: [['id', 'ID'], ['date', 'Date'], ['amount', 'Amount'], ['scopeType', 'Scope'],
+           ['sites', 'Sites'], ['month', 'Month'], ['person', 'Linked Person'],
+           ['notes', 'Notes'], ['created', 'Created At']],
     text: ['id', 'date', 'scopeType', 'sites', 'month', 'person', 'notes', 'created'],
     hideId: true
   },
   misc: {
-    name: 'دفعات عشوائية',
-    cols: [['id', 'المعرّف'], ['date', 'التاريخ'], ['category', 'البند'], ['amount', 'المبلغ'],
-           ['scopeType', 'النطاق'], ['sites', 'المواقع'], ['month', 'الشهر'], ['notes', 'ملاحظات'],
-           ['created', 'وقت الإدخال']],
+    name: 'Misc Payments',
+    cols: [['id', 'ID'], ['date', 'Date'], ['category', 'Category'], ['amount', 'Amount'],
+           ['scopeType', 'Scope'], ['sites', 'Sites'], ['month', 'Month'], ['notes', 'Notes'],
+           ['created', 'Created At']],
     text: ['id', 'date', 'category', 'scopeType', 'sites', 'month', 'notes', 'created'],
     hideId: true
   },
   // المواقع: عمود id هنا هو اسم/رقم الموقع نفسه (يظهر للمستخدم).
   sites: {
-    name: 'المواقع',
-    cols: [['id', 'رقم / اسم الموقع'], ['notes', 'ملاحظات']],
+    name: 'Sites',
+    cols: [['id', 'Site Number'], ['notes', 'Notes']],
     text: ['id', 'notes']
   },
   // قوائم الاختيار (مثلاً بنود الدفعات العشوائية). list = اسم القائمة، value = القيمة.
   lists: {
-    name: 'القوائم',
-    cols: [['id', 'المعرّف'], ['list', 'القائمة'], ['value', 'القيمة']],
+    name: 'Lists',
+    cols: [['id', 'ID'], ['list', 'List'], ['value', 'Value']],
     text: ['id', 'list', 'value'],
     hideId: true
   }
 };
+
+// Translate only fixed values at the Sheets boundary. The Arabic site UI keeps its current values.
+const STORED_VALUES = {
+  kind: { 'حساب': 'Account', 'خصم': 'Deduction', 'يومي': 'Daily', 'على الموقع': 'By Site', 'حضور': 'Attendance' },
+  role: { 'مهندس': 'Engineer', 'فني': 'Technician' },
+  scopeType: { 'عام': 'General', 'مواقع': 'Sites', 'شهر': 'Month' },
+  list: { 'بند': 'Category' }
+};
+const UI_VALUES = {};
+Object.keys(STORED_VALUES).forEach(key => {
+  UI_VALUES[key] = {};
+  Object.keys(STORED_VALUES[key]).forEach(ar => { UI_VALUES[key][STORED_VALUES[key][ar]] = ar; });
+});
 
 // ملف حسابات المواقع في Google Sheets. لا يمنح المعرّف وحده صلاحية الوصول إلى الملف.
 const SPREADSHEET_ID = '1MRrG4-SrkXPEGqSUNizcfEC9_wOqxNGHuZS7_fDS6C0';
@@ -138,12 +151,10 @@ function sheetFor_(key) {
   const ss = spreadsheet_();
   let sh = ss.getSheetByName(def.name);
   if (!sh) sh = ss.insertSheet(def.name);
-  if (sh.getLastRow() === 0) {
-    const labels = def.cols.map(c => c[1]);
-    sh.getRange(1, 1, 1, labels.length).setValues([labels]).setFontWeight('bold').setBackground('#e8eef0');
-  }
+  const labels = def.cols.map(c => c[1]);
+  sh.getRange(1, 1, 1, labels.length).setValues([labels]).setFontWeight('bold').setBackground('#e8eef0');
   sh.setFrozenRows(1);
-  sh.setRightToLeft(true);
+  sh.setRightToLeft(false);
   def.cols.forEach((c, i) => {
     if (def.text.indexOf(c[0]) !== -1) sh.getRange(1, i + 1, sh.getMaxRows(), 1).setNumberFormat('@');
   });
@@ -160,7 +171,8 @@ function fromCell_(key, v) {
     return Utilities.formatDate(v, tz_(), "yyyy-MM-dd'T'HH:mm:ss");
   }
   if (NUM_KEYS.indexOf(key) !== -1) return v === '' || v === null ? '' : Number(v);
-  return v === null || v === undefined ? '' : String(v);
+  const value = v === null || v === undefined ? '' : String(v);
+  return UI_VALUES[key] && UI_VALUES[key][value] || value;
 }
 
 function rowToRec_(def, row) {
@@ -173,7 +185,8 @@ function recToRow_(def, rec) {
   return def.cols.map(c => {
     const v = rec[c[0]];
     if (v === undefined || v === null) return '';
-    return NUM_KEYS.indexOf(c[0]) !== -1 && v !== '' ? Number(v) : v;
+    if (NUM_KEYS.indexOf(c[0]) !== -1 && v !== '') return Number(v);
+    return STORED_VALUES[c[0]] && STORED_VALUES[c[0]][v] || v;
   });
 }
 
