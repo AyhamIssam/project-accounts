@@ -150,19 +150,58 @@ dialog::backdrop { background: rgba(8, 18, 20, .55); }
 
 /* جوال: تحويل الجدول إلى بطاقات */
 @media (max-width: 680px) {
-  main { padding: 12px; }
+  body { font-size: 14px; }
+  .top {
+    position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto auto;
+    gap: 8px; padding: 10px 12px;
+  }
+  .top h1 { grid-column: 1 / 3; min-width: 0; font-size: 17px; }
+  .top .pill { grid-column: 3; justify-self: end; white-space: nowrap; }
+  .top .btn { min-height: 40px; padding: 6px 12px; font-size: 13px; }
+  #btn-refresh { grid-column: 1; }
+  #btn-settings { grid-column: 2 / 4; }
+  nav#tabs { top: 0; padding: 0 8px; gap: 0; overscroll-behavior-inline: contain; }
+  nav#tabs button { min-height: 48px; padding: 10px 13px; font-size: 14px; }
+  main { padding: 12px 12px calc(24px + env(safe-area-inset-bottom, 0px)); }
+  .toolbar { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .toolbar label { min-width: 0; font-size: 13px; }
+  .toolbar input, .toolbar select { width: 100%; min-width: 0; min-height: 44px; font-size: 16px; }
+  .toolbar .grow { display: none; }
+  .toolbar > .btn.primary { grid-column: 1 / -1; min-height: 46px; font-size: 15px; }
+  .toolbar .addrow { min-width: 0; }
+  .toolbar .addrow input { min-width: 0; }
+  .toolbar .addrow .btn { min-height: 44px; }
+  .kpis { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding: 0 0 14px; }
+  .kpi { min-width: 0; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+  .kpi.main { grid-column: 1 / -1; }
+  .kpi b { font-size: 18px; text-align: start; }
+  .kpi.main b { font-size: 25px; }
+  dialog { width: 100%; max-width: none; max-height: calc(100dvh - 12px); margin: auto 0 0; border-radius: 16px 16px 0 0; border-bottom: 0; }
+  .dlg-in { max-height: calc(100dvh - 12px); overflow-y: auto; overscroll-behavior: contain; padding: 18px 16px calc(16px + env(safe-area-inset-bottom, 0px)); gap: 12px; }
+  .dlg-in input, .dlg-in select, .dlg-in textarea { min-height: 44px; font-size: 16px; }
+  .seg button, .chips button { min-height: 44px; }
+  .dlg-foot { position: sticky; bottom: calc(-16px - env(safe-area-inset-bottom, 0px)); z-index: 1; padding: 10px 0 calc(4px + env(safe-area-inset-bottom, 0px)); background: var(--surface); }
+  .dlg-foot .btn { min-height: 44px; flex: 1; }
+  .list-edit .li { min-height: 44px; }
+  .list-edit .li .btn { min-height: 40px; }
+  .list-edit .addrow .btn { min-height: 44px; }
   .row2 { grid-template-columns: 1fr; }
+  .tbl-wrap { overflow: hidden; }
   table.tbl.cards thead { display: none; }
   table.tbl.cards, table.tbl.cards tbody, table.tbl.cards tr, table.tbl.cards td { display: block; width: 100%; }
-  table.tbl.cards tr { border-top: 1px solid var(--line); padding: 8px 0; }
+  table.tbl.cards tr { border-top: 1px solid var(--line); padding: 10px 0; }
   table.tbl.cards tbody tr:first-child { border-top: 0; }
-  table.tbl.cards td { border: 0; padding: 2px 12px; display: flex; gap: 10px; justify-content: space-between; text-align: end; }
-  table.tbl.cards td::before { content: attr(data-label); color: var(--muted); font-size: 12.5px; text-align: start; flex: none; }
-  table.tbl.cards td.act { justify-content: flex-end; padding-top: 6px; }
+  table.tbl.cards td { border: 0; padding: 4px 12px; display: flex; align-items: start; gap: 10px; justify-content: space-between; text-align: end; overflow-wrap: anywhere; }
+  table.tbl.cards td::before { content: attr(data-label); color: var(--muted); font-size: 12.5px; text-align: start; flex: 0 0 38%; }
+  table.tbl.cards td > * { max-width: 62%; }
+  table.tbl.cards td.act { justify-content: stretch; gap: 8px; padding-top: 10px; }
+  table.tbl.cards td.act .btn { flex: 1; min-height: 42px; }
   table.tbl.cards td.act::before { content: none; }
-  table.tbl.cards tfoot tr { display: flex; justify-content: space-between; padding: 8px 12px; }
-  table.tbl.cards tfoot td { display: block; width: auto; padding: 0; }
+  table.tbl.cards tfoot tr { padding: 8px 0; }
+  table.tbl.cards tfoot td { display: flex; width: 100%; padding: 4px 12px; }
   table.tbl.cards tfoot td::before { content: none; }
+  table.tbl.cards.sum tfoot td[data-label]:not([data-label=""])::before { content: attr(data-label); color: var(--muted); font-size: 12.5px; flex: 0 0 38%; text-align: start; }
+  table.tbl.cards:not(.sum) tfoot td { display: block; }
   table.tbl.cards tfoot td.hide-m { display: none; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
