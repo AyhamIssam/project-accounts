@@ -15,11 +15,11 @@
 ### 1) الشيت و Apps Script
 
 1. أنشئ ملف Google Sheets جديد وسمّه مثلاً "حسابات المواقع".
-2. من الشيت: **Extensions > Apps Script**.
-3. احذف الكود الموجود والصق محتوى `apps-script/Code.gs`.
+2. افتح [Google Apps Script](https://script.google.com/) وأنشئ مشروعاً باسم "حسابات المواقع - API" في نفس حساب الشيت.
+3. احذف الكود الموجود والصق محتوى `apps-script/Code.gs`. يحدد `SPREADSHEET_ID` في أعلى الكود الشيت المرتبط بالموقع.
 4. (اختياري) من **Project Settings** فعّل "Show appsscript.json" والصق محتوى `apps-script/appsscript.json`.
 5. من **Project Settings > Script properties** أضف خاصية: الاسم `APP_PASSWORD` والقيمة كلمة السر التي تريدها.
-6. اختر الدالة `setup` من القائمة أعلى المحرر واضغط **Run** ووافق على الصلاحيات. ستُنشأ الشيتات: المقاول، المهندس والفنيين، السيارة، دفعات عشوائية، المواقع، القوائم.
+6. اختر الدالة `setup` من القائمة أعلى المحرر واضغط **Run** ووافق على الصلاحيات. ستُجهّز الشيتات: المقاول، المهندس والفنيين، السيارة، دفعات عشوائية، المواقع، القوائم.
 7. **Deploy > New deployment > Web app**: `Execute as: Me` و `Who has access: Anyone`. انسخ الرابط الذي ينتهي بـ `/exec`.
 
 > أي تعديل لاحق على `Code.gs` يحتاج **Deploy > Manage deployments > Edit > New version** ليأخذ مفعوله.

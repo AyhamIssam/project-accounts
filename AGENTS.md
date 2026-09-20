@@ -13,7 +13,7 @@ Arabic (RTL) static site for construction-project accounting. Data lives in Goog
 | `js/calc.js` | Pure allocation logic (`Calc.allocate(state)`), split with 3-decimal rounding (JOD fils). |
 | `js/api.js` | `Api.load/add/update/remove`. Remote = POST `text/plain` JSON to Apps Script; demo = localStorage. |
 | `js/app.js` | UI. `SECTIONS` defines each tab's form fields and table columns. |
-| `apps-script/Code.gs` | Backend. `SCHEMA` defines sheets + column order. Must stay in sync with the record keys used in `app.js`. |
+| `apps-script/Code.gs` | Backend. `SPREADSHEET_ID` identifies the workbook; `SCHEMA` defines sheets + column order. Must stay in sync with the record keys used in `app.js`. |
 
 ## Data model (record keys)
 

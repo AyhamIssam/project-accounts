@@ -1,7 +1,6 @@
 /**
  * الخلفية (Backend) لموقع "حسابات المواقع".
- * هذا الملف يُلصق داخل Google Apps Script المرتبط بملف Google Sheets نفسه
- * (من الشيت: Extensions > Apps Script).
+ * هذا الملف يُلصق داخل Google Apps Script، ويستخدم ملف Google Sheets المحدد أدناه.
  *
  * الفكرة: كل قسم = شيت. الموقع يرسل طلبات POST بصيغة JSON،
  * وهذا الكود يقرأ ويكتب في الشيتات. لا توجد بيانات مخزنة في الموقع نفسه.
@@ -66,6 +65,10 @@ const SCHEMA = {
   }
 };
 
+// ملف حسابات المواقع في Google Sheets. لا يمنح المعرّف وحده صلاحية الوصول إلى الملف.
+const SPREADSHEET_ID = '1MRrG4-SrkXPEGqSUNizcfEC9_wOqxNGHuZS7_fDS6C0';
+function spreadsheet_() { return SpreadsheetApp.openById(SPREADSHEET_ID); }
+
 const DATE_KEYS = ['date'];
 const MONTH_KEYS = ['month'];
 const NUM_KEYS = ['amount'];
@@ -109,7 +112,6 @@ function doPost(e) {
 /** شغّلها مرة واحدة من المحرر لإنشاء الشيتات. */
 function setup() {
   Object.keys(SCHEMA).forEach(sheetFor_);
-  SpreadsheetApp.getActiveSpreadsheet().toast('تم تجهيز الشيتات');
 }
 
 /* ---------- أدوات داخلية ---------- */
@@ -133,23 +135,23 @@ function withLock_(fn) {
 function sheetFor_(key) {
   const def = SCHEMA[key];
   if (!def) throw new Error('قسم غير معروف: ' + key);
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = spreadsheet_();
   let sh = ss.getSheetByName(def.name);
   if (!sh) sh = ss.insertSheet(def.name);
   if (sh.getLastRow() === 0) {
     const labels = def.cols.map(c => c[1]);
     sh.getRange(1, 1, 1, labels.length).setValues([labels]).setFontWeight('bold').setBackground('#e8eef0');
-    sh.setFrozenRows(1);
-    sh.setRightToLeft(true);
-    def.cols.forEach((c, i) => {
-      if (def.text.indexOf(c[0]) !== -1) sh.getRange(1, i + 1, sh.getMaxRows(), 1).setNumberFormat('@');
-    });
-    if (def.hideId) sh.hideColumns(1);
   }
+  sh.setFrozenRows(1);
+  sh.setRightToLeft(true);
+  def.cols.forEach((c, i) => {
+    if (def.text.indexOf(c[0]) !== -1) sh.getRange(1, i + 1, sh.getMaxRows(), 1).setNumberFormat('@');
+  });
+  if (def.hideId && !sh.isColumnHiddenByUser(1)) sh.hideColumns(1);
   return sh;
 }
 
-function tz_() { return SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetTimeZone(); }
+function tz_() { return spreadsheet_().getSpreadsheetTimeZone(); }
 
 function fromCell_(key, v) {
   if (v instanceof Date) {
