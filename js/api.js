@@ -8,6 +8,9 @@ window.Api = (function () {
   const PASS_KEY = 'pt-password';
   const DEMO_KEY = 'pt-demo-v2';
   const isDemo = !cfg.API_URL;
+  if (!isDemo) {
+    try { localStorage.removeItem(DEMO_KEY); } catch (e) { /* ignore */ }
+  }
 
   const uid = () => Math.random().toString(36).slice(2, 10);
   const nowISO = () => new Date().toISOString().slice(0, 19);
