@@ -190,6 +190,15 @@ function recToRow_(def, rec) {
   });
 }
 
+// جهّز الحقول النصية قبل الكتابة حتى لا يحوّل Google Sheets قائمة مواقع مثل
+// 4735,4769,4779 إلى رقم واحد ويفقد أرقاماً بسبب حد دقة الأرقام الكبيرة.
+function writeRow_(range, def, rec) {
+  def.cols.forEach((c, i) => {
+    if (def.text.indexOf(c[0]) !== -1) range.getCell(1, i + 1).setNumberFormat('@');
+  });
+  range.setValues([recToRow_(def, rec)]);
+}
+
 function readAll_() {
   const data = {};
   Object.keys(SCHEMA).forEach(key => {
@@ -223,7 +232,7 @@ function add_(key, rec) {
   rec.id = rec.id ? String(rec.id) : Utilities.getUuid().slice(0, 8);
   if (findRow_(sh, rec.id) !== -1) throw new Error('موجود مسبقاً: ' + rec.id);
   if (def.cols.some(c => c[0] === 'created')) rec.created = Utilities.formatDate(new Date(), tz_(), "yyyy-MM-dd'T'HH:mm:ss");
-  sh.appendRow(recToRow_(def, rec));
+  writeRow_(sh.getRange(sh.getLastRow() + 1, 1, 1, def.cols.length), def, rec);
   return rec;
 }
 
@@ -234,7 +243,7 @@ function update_(key, rec) {
   if (r === -1) throw new Error('السجل غير موجود (ربما حُذف من الشيت)');
   const existing = rowToRec_(def, sh.getRange(r, 1, 1, def.cols.length).getValues()[0]);
   const merged = Object.assign({}, existing, rec, { id: existing.id, created: existing.created });
-  sh.getRange(r, 1, 1, def.cols.length).setValues([recToRow_(def, merged)]);
+  writeRow_(sh.getRange(r, 1, 1, def.cols.length), def, merged);
   return merged;
 }
 
