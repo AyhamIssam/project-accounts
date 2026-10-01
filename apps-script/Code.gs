@@ -67,7 +67,7 @@ const SCHEMA = {
 
 // Translate only fixed values at the Sheets boundary. The Arabic site UI keeps its current values.
 const STORED_VALUES = {
-  kind: { 'حساب': 'Account', 'خصم': 'Deduction', 'يومي': 'Daily', 'على الموقع': 'By Site', 'حضور': 'Attendance' },
+  kind: { 'حساب': 'Account', 'خصم': 'Deduction', 'يومي': 'Daily', 'على الموقع': 'By Site', 'حضور': 'Attendance', 'دفعة': 'Payment' },
   role: { 'مهندس': 'Engineer', 'فني': 'Technician' },
   scopeType: { 'عام': 'General', 'مواقع': 'Sites', 'شهر': 'Month' },
   list: { 'بند': 'Category' }

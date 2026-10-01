@@ -104,23 +104,24 @@
         { key: 'role', label: 'الصفة', type: 'seg', options: ROLE, def: ROLE[1] },
         {
           key: 'kind', label: 'نوع التسجيل', type: 'seg', def: KIND.DAY,
-          options: [{ v: KIND.DAY, t: 'حساب على اليوم' }, { v: KIND.SITE, t: 'حساب على الموقع' }, { v: KIND.PRESENT, t: 'تسجيل حضور فقط' }],
+          options: [{ v: KIND.DAY, t: 'حساب على اليوم' }, { v: KIND.SITE, t: 'حساب على الموقع' }, { v: KIND.PRESENT, t: 'تسجيل حضور فقط' }, { v: KIND.PAYMENT, t: 'سلفة / دفعة' }],
           hint: v => v.kind === KIND.SITE
             ? 'المبلغ يتوزع بالتساوي على أيام الحضور المسجّلة لنفس الشخص في هذه المواقع. سجّل أيام الحضور من "تسجيل حضور فقط".'
             : v.kind === KIND.PRESENT ? 'حضور بدون مبلغ. يُستخدم لتوزيع "الحساب على الموقع" على الأيام.'
+            : v.kind === KIND.PAYMENT ? 'المبلغ الذي استلمه الشخص. يُخصم من رصيده ولا يُضاف مرة ثانية إلى تكلفة الموقع.'
             : 'إذا اشتغل بأكثر من موقع في اليوم يُقسم المبلغ بين المواقع بالتساوي.'
         },
-        { key: 'date', label: v => v.kind === KIND.SITE ? 'تاريخ التسجيل' : 'اليوم', type: 'date', required: true, def: todayISO },
-        { key: 'sites', label: v => v.kind === KIND.SITE ? 'رقم الموقع أو المواقع' : 'الموقع أو المواقع', type: 'sites', required: true },
+        { key: 'date', label: v => v.kind === KIND.PAYMENT ? 'تاريخ الدفعة' : v.kind === KIND.SITE ? 'تاريخ التسجيل' : 'اليوم', type: 'date', required: true, def: todayISO },
+        { key: 'sites', label: v => v.kind === KIND.SITE ? 'رقم الموقع أو المواقع' : 'الموقع أو المواقع', type: 'sites', required: true, showIf: v => v.kind !== KIND.PAYMENT },
         { key: 'amount', label: 'المبلغ (' + CUR + ')', type: 'money', required: true, showIf: v => v.kind !== KIND.PRESENT },
         { key: 'notes', label: 'ملاحظات', type: 'textarea' }
       ],
       cols: [
         { label: 'التاريخ', r: r => dateEl(r.date) },
         { label: 'الاسم', r: r => h('span', null, r.person, ' ', h('span', { class: 'chip gray' }, r.role)) },
-        { label: 'النوع', r: (r, x) => [r.kind, x.warn.has(r.id) ? h('span', { class: 'chip warn', title: 'لا توجد أيام حضور مسجّلة لهذا الشخص في هذا الموقع' }, 'بدون أيام حضور') : null] },
+        { label: 'النوع', r: (r, x) => [h('span', { class: 'chip ' + (r.kind === KIND.PAYMENT ? 'warn' : 'gray') }, r.kind === KIND.PAYMENT ? 'سلفة / دفعة' : r.kind), x.warn.has(r.id) ? h('span', { class: 'chip warn', title: 'لا توجد أيام حضور مسجّلة لهذا الشخص في هذا الموقع' }, 'بدون أيام حضور') : null] },
         { label: 'المواقع', r: r => chipsFor(r.sites) },
-        { label: 'المبلغ', n: true, r: r => r.kind === KIND.PRESENT ? '—' : money(r.amount) },
+        { label: 'المبلغ', n: true, r: r => r.kind === KIND.PRESENT ? '—' : r.kind === KIND.PAYMENT ? h('span', { class: 'num neg' }, '-' + fmt(r.amount)) : money(r.amount) },
         { label: 'ملاحظات', r: r => r.notes || '' }
       ]
     },
@@ -272,18 +273,21 @@
     if (sec === 'staff' && rows.length) {
       const per = {};
       rows.forEach(r => {
-        const p = (per[r.person] = per[r.person] || { role: r.role, total: 0, days: new Set() });
-        if (r.kind !== KIND.SITE) p.days.add(r.date);
-        if (r.kind !== KIND.PRESENT) p.total += Number(r.amount) || 0;
+        const p = (per[r.person] = per[r.person] || { role: r.role, earned: 0, paid: 0, days: new Set() });
+        if (r.kind === KIND.DAY || r.kind === KIND.PRESENT) p.days.add(r.date);
+        if (r.kind === KIND.PAYMENT) p.paid += Number(r.amount) || 0;
+        else if (r.kind !== KIND.PRESENT) p.earned += Number(r.amount) || 0;
       });
       root.append(h('h2', null, 'ملخص الأشخاص'));
       root.append(h('div', { class: 'tbl-wrap' }, h('table', { class: 'tbl cards' },
-        h('thead', null, h('tr', null, h('th', null, 'الاسم'), h('th', null, 'الصفة'), h('th', { class: 'n' }, 'أيام مسجّلة'), h('th', { class: 'n' }, 'المجموع'), h('th', { class: 'n' }, 'دفعات السيارة'))),
+        h('thead', null, h('tr', null, h('th', null, 'الاسم'), h('th', null, 'الصفة'), h('th', { class: 'n' }, 'أيام مسجّلة'), h('th', { class: 'n' }, 'الاستحقاق'), h('th', { class: 'n' }, 'المدفوع'), h('th', { class: 'n' }, 'المتبقي'), h('th', { class: 'n' }, 'دفعات السيارة'))),
         h('tbody', null, Object.keys(per).map(n => h('tr', null,
           h('td', { 'data-label': 'الاسم' }, n),
           h('td', { 'data-label': 'الصفة' }, per[n].role),
           h('td', { class: 'n', 'data-label': 'أيام مسجّلة' }, h('span', { class: 'num' }, per[n].days.size)),
-          h('td', { class: 'n', 'data-label': 'المجموع' }, money(per[n].total)),
+          h('td', { class: 'n', 'data-label': 'الاستحقاق' }, money(per[n].earned)),
+          h('td', { class: 'n', 'data-label': 'المدفوع' }, money(per[n].paid)),
+          h('td', { class: 'n', 'data-label': 'المتبقي' }, money(per[n].earned - per[n].paid)),
           h('td', { class: 'n', 'data-label': 'دفعات السيارة' }, money(state.car.filter(c => c.person === n && (!f.month || entryDate('car', c).slice(0, 7) === f.month)).reduce((a, c) => a + (Number(c.amount) || 0), 0)))))))));
       root.append(h('h2', null, 'السجلات'));
     }
@@ -292,7 +296,7 @@
       root.append(h('div', { class: 'tbl-wrap' }, h('div', { class: 'empty' }, 'لا توجد سجلات ضمن هذا الفلتر.')));
       return root;
     }
-    const total = rows.reduce((s, r) => s + (r.kind === KIND.PRESENT ? 0 : (r.kind === CKIND.DEDUCT ? -1 : 1) * (Number(r.amount) || 0)), 0);
+    const total = rows.reduce((s, r) => s + (r.kind === KIND.PRESENT ? 0 : (r.kind === CKIND.DEDUCT || r.kind === KIND.PAYMENT ? -1 : 1) * (Number(r.amount) || 0)), 0);
     root.append(h('div', { class: 'tbl-wrap' }, h('table', { class: 'tbl cards' },
       h('thead', null, h('tr', null, S.cols.map(c => h('th', { class: c.n ? 'n' : '' }, c.label)), h('th', null, ''))),
       h('tbody', null, rows.map(r => h('tr', null,
@@ -302,7 +306,7 @@
           h('button', { class: 'btn small danger', type: 'button', onclick: () => removeRecord(sec, r) }, 'حذف'))))),
       h('tfoot', null, h('tr', null, h('td', { colspan: S.cols.length + 1 },
         h('span', { class: 'addrow', style: 'justify-content:space-between' },
-          h('span', null, (sec === 'contractor' ? 'الصافي (' : 'الإجمالي (') + rows.length + ' سجل)'), h('b', { class: 'num' }, fmt(total) + ' ' + CUR))))))));
+          h('span', null, (sec === 'contractor' || sec === 'staff' ? 'الصافي (' : 'الإجمالي (') + rows.length + ' سجل)'), h('b', { class: 'num' }, fmt(total) + ' ' + CUR))))))));
     return root;
   }
 

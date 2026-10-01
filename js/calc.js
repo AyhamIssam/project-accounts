@@ -44,7 +44,8 @@
     st.staff.forEach(r => {
       const amount = Number(r.amount) || 0;
       const sites = ids(r.sites);
-      if (r.kind === KIND.PRESENT || !amount) return;
+      // السلفة/الدفعة تسدّد من رصيد الشخص ولا تضيف تكلفة جديدة على الموقع.
+      if (r.kind === KIND.PRESENT || r.kind === KIND.PAYMENT || !amount) return;
       if (r.kind === KIND.DAY) {
         // حساب يومي: يقسم على المواقع التي عمل بها في ذلك اليوم
         split(amount, sites.length).forEach((a, i) => push('staff', r, sites[i], r.date, a, { person: r.person }));
