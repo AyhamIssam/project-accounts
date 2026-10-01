@@ -2,11 +2,11 @@
 // الأقسام معرّفة في SECTIONS (الحقول + أعمدة الجدول). لإضافة حقل أو قسم عدّل هناك وفي Code.gs.
 (function () {
   'use strict';
-  const { KIND, ROLE, SCOPE, CKIND, LIST_CATEGORY } = window.SCHEMA;
+  const { KIND, ROLE, SCOPE, CKIND, COMPANY_KIND, LIST_CATEGORY } = window.SCHEMA;
   const CFG = window.APP_CONFIG || {};
   const CUR = CFG.CURRENCY || 'د.أ';
 
-  const state = { contractor: [], staff: [], car: [], misc: [], sites: [], lists: [] };
+  const state = { company: [], contractor: [], staff: [], car: [], misc: [], sites: [], lists: [] };
   const ui = { tab: 'summary', filters: {}, dialogLocked: false };
 
   /* ---------- أدوات صغيرة ---------- */
@@ -47,6 +47,7 @@
   const sortSites = a => a.slice().sort((x, y) => String(x).localeCompare(String(y), 'en', { numeric: true }));
   const people = () => Array.from(new Set(state.staff.map(r => r.person).filter(Boolean)));
   const deductLabels = () => Array.from(new Set(['ضمان اجتماعي', 'سلفة', 'غرامة'].concat(state.contractor.map(r => r.label).filter(Boolean))));
+  const companyDeductLabels = () => Array.from(new Set(['ضمان اجتماعي للموظفين', 'غرامة', 'خصم آخر'].concat(state.company.map(r => r.label).filter(Boolean))));
   // رقم الموقع: 3 أو 4 أرقام فقط (نقبل الأرقام العربية ونحوّلها)
   const normSite = v => String(v || '').trim().replace(/[٠-٩]/g, d => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)));
   const validSite = v => /^\d{3,4}$/.test(v);
@@ -75,6 +76,30 @@
     : r.scopeType === SCOPE.MONTH ? h('span', { class: 'chip gray' }, monthLabel(r.month)) : h('span', { class: 'chip gray' }, 'عام');
 
   const SECTIONS = {
+    company: {
+      label: 'الشركة الرئيسية', addLabel: 'تسجيل حركة',
+      fields: [
+        {
+          key: 'kind', label: 'نوع الحركة', type: 'seg', def: COMPANY_KIND.DUE,
+          options: [{ v: COMPANY_KIND.DUE, t: 'مستحق لي' }, { v: COMPANY_KIND.DEDUCT, t: 'خصم عليّ' }, { v: COMPANY_KIND.RECEIVED, t: 'دفعة استلمتها' }],
+          hint: v => v.kind === COMPANY_KIND.DUE ? 'قيمة الأعمال التي أصبحت مستحقة لك على الشركة.'
+            : v.kind === COMPANY_KIND.DEDUCT ? 'مثل الضمان الاجتماعي؛ يُطرح من المبلغ المستحق لك.'
+            : 'المبلغ الذي دفعته لك الشركة فعلياً؛ يُطرح من الرصيد المتبقي.'
+        },
+        { key: 'date', label: v => v.kind === COMPANY_KIND.RECEIVED ? 'تاريخ الاستلام' : 'التاريخ', type: 'date', required: true, def: todayISO },
+        { key: 'site', label: 'الموقع (اختياري)', type: 'site', placeholder: () => 'عام / بدون موقع' },
+        { key: 'amount', label: 'المبلغ (' + CUR + ')', type: 'money', required: true },
+        { key: 'label', label: 'بند الخصم', type: 'text', required: true, list: companyDeductLabels, showIf: v => v.kind === COMPANY_KIND.DEDUCT },
+        { key: 'notes', label: 'ملاحظات', type: 'textarea' }
+      ],
+      cols: [
+        { label: 'التاريخ', r: r => dateEl(r.date) },
+        { label: 'النوع', r: r => h('span', { class: 'chip ' + (r.kind === COMPANY_KIND.DUE ? 'gray' : 'warn') }, r.kind === COMPANY_KIND.DUE ? 'مستحق لي' : r.kind === COMPANY_KIND.DEDUCT ? 'خصم عليّ' : 'دفعة مستلمة') },
+        { label: 'الموقع', r: r => r.site ? chip(r.site) : h('span', { class: 'chip gray' }, 'عام') },
+        { label: 'المبلغ', n: true, r: r => r.kind === COMPANY_KIND.DUE ? money(r.amount) : h('span', { class: 'num neg' }, '-' + fmt(r.amount)) },
+        { label: 'البند / الملاحظات', r: r => [r.label || '', r.label && r.notes ? ' — ' : '', r.notes || ''] }
+      ]
+    },
     contractor: {
       label: 'المقاول', addLabel: 'تسجيل حساب أو خصم',
       fields: [
@@ -165,7 +190,7 @@
   /* ---------- الفلاتر ---------- */
   const filtersFor = t => (ui.filters[t] = ui.filters[t] || { month: '', site: '', person: '' });
   const entryDate = (sec, r) => (sec !== 'contractor' && sec !== 'staff' && r.scopeType === SCOPE.MONTH && r.month) ? r.month + '-01' : (r.date || '');
-  const entrySites = (sec, r) => sec === 'contractor' ? [r.site] : (sec === 'staff' || r.scopeType === SCOPE.SITES) ? ids(r.sites) : [];
+  const entrySites = (sec, r) => (sec === 'company' || sec === 'contractor') ? [r.site] : (sec === 'staff' || r.scopeType === SCOPE.SITES) ? ids(r.sites) : [];
   function matches(sec, r, f) {
     if (f.month && entryDate(sec, r).slice(0, 7) !== f.month) return false;
     if (f.site && entrySites(sec, r).indexOf(f.site) === -1) return false;
@@ -270,6 +295,17 @@
         h('div', { class: 'kpi main' }, h('span', null, 'الصافي المستحق للمقاول'), h('b', null, fmt(gross - ded)), h('span', null, CUR))));
     }
 
+    if (sec === 'company' && rows.length) {
+      const due = rows.filter(r => r.kind === COMPANY_KIND.DUE).reduce((a, r) => a + (Number(r.amount) || 0), 0);
+      const ded = rows.filter(r => r.kind === COMPANY_KIND.DEDUCT).reduce((a, r) => a + (Number(r.amount) || 0), 0);
+      const received = rows.filter(r => r.kind === COMPANY_KIND.RECEIVED).reduce((a, r) => a + (Number(r.amount) || 0), 0);
+      root.append(h('div', { class: 'kpis' },
+        h('div', { class: 'kpi' }, h('span', null, 'إجمالي المستحق لك'), h('b', null, fmt(due))),
+        h('div', { class: 'kpi' }, h('span', null, 'الخصومات عليك'), h('b', { class: 'neg' }, '-' + fmt(ded))),
+        h('div', { class: 'kpi' }, h('span', null, 'الدفعات المستلمة'), h('b', null, fmt(received))),
+        h('div', { class: 'kpi main' }, h('span', null, 'الرصيد المتبقي لك'), h('b', null, fmt(due - ded - received)), h('span', null, CUR))));
+    }
+
     if (sec === 'staff' && rows.length) {
       const per = {};
       rows.forEach(r => {
@@ -296,7 +332,7 @@
       root.append(h('div', { class: 'tbl-wrap' }, h('div', { class: 'empty' }, 'لا توجد سجلات ضمن هذا الفلتر.')));
       return root;
     }
-    const total = rows.reduce((s, r) => s + (r.kind === KIND.PRESENT ? 0 : (r.kind === CKIND.DEDUCT || r.kind === KIND.PAYMENT ? -1 : 1) * (Number(r.amount) || 0)), 0);
+    const total = rows.reduce((s, r) => s + (r.kind === KIND.PRESENT ? 0 : (r.kind === CKIND.DEDUCT || r.kind === KIND.PAYMENT || r.kind === COMPANY_KIND.DEDUCT || r.kind === COMPANY_KIND.RECEIVED ? -1 : 1) * (Number(r.amount) || 0)), 0);
     root.append(h('div', { class: 'tbl-wrap' }, h('table', { class: 'tbl cards' },
       h('thead', null, h('tr', null, S.cols.map(c => h('th', { class: c.n ? 'n' : '' }, c.label)), h('th', null, ''))),
       h('tbody', null, rows.map(r => h('tr', null,
@@ -306,7 +342,7 @@
           h('button', { class: 'btn small danger', type: 'button', onclick: () => removeRecord(sec, r) }, 'حذف'))))),
       h('tfoot', null, h('tr', null, h('td', { colspan: S.cols.length + 1 },
         h('span', { class: 'addrow', style: 'justify-content:space-between' },
-          h('span', null, (sec === 'contractor' || sec === 'staff' ? 'الصافي (' : 'الإجمالي (') + rows.length + ' سجل)'), h('b', { class: 'num' }, fmt(total) + ' ' + CUR))))))));
+          h('span', null, (sec === 'company' || sec === 'contractor' || sec === 'staff' ? 'الصافي (' : 'الإجمالي (') + rows.length + ' سجل)'), h('b', { class: 'num' }, fmt(total) + ' ' + CUR))))))));
     return root;
   }
 

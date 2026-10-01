@@ -17,6 +17,7 @@ Arabic (RTL) static site for construction-project accounting. Data lives in Goog
 
 ## Data model (record keys)
 
+- `company`: id, date, kind (`مستحق`/`خصم`/`دفعة مستلمة` in the UI; `Amount Due`/`Deduction`/`Payment Received` in Sheets), site (optional), amount, label (deduction item), notes, created. Balance = due − deductions − received payments; this section is separate from project expenses.
 - `contractor`: id, date, kind (`حساب`/`خصم` in the UI; `Account`/`Deduction` in Sheets), site (empty allowed for a deduction = general), amount, label (deduction item), notes, created. Deductions are stored positive and counted negative in `calc.js`.
 - `staff`: id, person, role, kind (`يومي`/`على الموقع`/`حضور` in the UI; `Daily`/`By Site`/`Attendance` in Sheets), date, sites (comma list), amount, notes, created
 - `car`: id, date, amount, scopeType (`عام`/`مواقع`/`شهر` in the UI; `General`/`Sites`/`Month` in Sheets), sites, month (`YYYY-MM`), person (optional link to a staff name), notes, created

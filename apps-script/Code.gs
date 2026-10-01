@@ -18,6 +18,13 @@
 // تعريف الشيتات. الترتيب هو ترتيب الأعمدة. [المفتاح، عنوان العمود بالعربي]
 // المفاتيح (بالإنجليزي) هي نفسها المستخدمة في js/app.js، لا تغيّرها بدون تعديل الموقع.
 const SCHEMA = {
+  company: {
+    name: 'Company Account',
+    cols: [['id', 'ID'], ['date', 'Date'], ['kind', 'Entry Type'], ['site', 'Site'],
+           ['amount', 'Amount'], ['label', 'Deduction Item'], ['notes', 'Notes'], ['created', 'Created At']],
+    text: ['id', 'date', 'kind', 'site', 'label', 'notes', 'created'],
+    hideId: true
+  },
   contractor: {
     name: 'Contractor',
     // kind: حساب أو خصم (مثل الضمان الاجتماعي لموظفي المقاول). الخصم قد يكون بدون موقع (عام).
@@ -67,7 +74,7 @@ const SCHEMA = {
 
 // Translate only fixed values at the Sheets boundary. The Arabic site UI keeps its current values.
 const STORED_VALUES = {
-  kind: { 'حساب': 'Account', 'خصم': 'Deduction', 'يومي': 'Daily', 'على الموقع': 'By Site', 'حضور': 'Attendance', 'دفعة': 'Payment' },
+  kind: { 'حساب': 'Account', 'مستحق': 'Amount Due', 'خصم': 'Deduction', 'دفعة مستلمة': 'Payment Received', 'يومي': 'Daily', 'على الموقع': 'By Site', 'حضور': 'Attendance', 'دفعة': 'Payment' },
   role: { 'مهندس': 'Engineer', 'فني': 'Technician' },
   scopeType: { 'عام': 'General', 'مواقع': 'Sites', 'شهر': 'Month' },
   list: { 'بند': 'Category' }

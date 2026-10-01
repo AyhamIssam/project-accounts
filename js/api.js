@@ -4,7 +4,7 @@
 window.Api = (function () {
   const cfg = window.APP_CONFIG || {};
   const { KIND, SCOPE, CKIND, LIST_CATEGORY } = window.SCHEMA;
-  const SHEETS = ['contractor', 'staff', 'car', 'misc', 'sites', 'lists'];
+  const SHEETS = ['company', 'contractor', 'staff', 'car', 'misc', 'sites', 'lists'];
   const PASS_KEY = 'pt-password';
   const DEMO_KEY = 'pt-demo-v2';
   const isDemo = !cfg.API_URL;
@@ -48,6 +48,7 @@ window.Api = (function () {
     let n = 0;
     const id = () => 'd' + (++n);
     return {
+      company: [],
       sites: [{ id: '101', notes: '' }, { id: '152', notes: '' }, { id: '2103', notes: '' }],
       lists: [LIST_CATEGORY_ROW('محروقات'), LIST_CATEGORY_ROW('أدوات'), LIST_CATEGORY_ROW('نقل'), LIST_CATEGORY_ROW('ضيافة')],
       contractor: [
@@ -97,6 +98,7 @@ window.Api = (function () {
     async add(sheet, rec) {
       if (isDemo) {
         const s = demoLoad();
+        s[sheet] = s[sheet] || [];
         const r = Object.assign({}, rec, { id: rec.id || uid(), created: nowISO() });
         if (s[sheet].some(x => x.id === r.id)) throw new Error('موجود مسبقاً: ' + r.id);
         s[sheet].push(r); demoSave(s);
