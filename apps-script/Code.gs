@@ -18,6 +18,14 @@
 // تعريف الشيتات. الترتيب هو ترتيب الأعمدة. [المفتاح، عنوان العمود بالعربي]
 // المفاتيح (بالإنجليزي) هي نفسها المستخدمة في js/app.js، لا تغيّرها بدون تعديل الموقع.
 const SCHEMA = {
+  worklog: {
+    name: 'Work Log',
+    cols: [['id', 'ID'], ['date', 'Date'], ['team', 'Team'], ['site', 'Site'],
+           ['tasks', 'Work Performed'], ['startTime', 'Start Time'], ['endTime', 'End Time'],
+           ['notes', 'Notes'], ['created', 'Created At']],
+    text: ['id', 'date', 'team', 'site', 'tasks', 'startTime', 'endTime', 'notes', 'created'],
+    hideId: true
+  },
   company: {
     name: 'Company Account',
     cols: [['id', 'ID'], ['date', 'Date'], ['kind', 'Entry Type'], ['site', 'Site'],

@@ -4,7 +4,7 @@
 window.Api = (function () {
   const cfg = window.APP_CONFIG || {};
   const { KIND, SCOPE, CKIND, LIST_CATEGORY } = window.SCHEMA;
-  const SHEETS = ['company', 'contractor', 'staff', 'car', 'misc', 'sites', 'lists'];
+  const SHEETS = ['company', 'worklog', 'contractor', 'staff', 'car', 'misc', 'sites', 'lists'];
   const PASS_KEY = 'pt-password';
   const DEMO_KEY = 'pt-demo-v2';
   const isDemo = !cfg.API_URL;
@@ -49,6 +49,7 @@ window.Api = (function () {
     const id = () => 'd' + (++n);
     return {
       company: [],
+      worklog: [],
       sites: [{ id: '101', notes: '' }, { id: '152', notes: '' }, { id: '2103', notes: '' }],
       lists: [LIST_CATEGORY_ROW('محروقات'), LIST_CATEGORY_ROW('أدوات'), LIST_CATEGORY_ROW('نقل'), LIST_CATEGORY_ROW('ضيافة')],
       contractor: [

@@ -6,7 +6,7 @@
   const CFG = window.APP_CONFIG || {};
   const CUR = CFG.CURRENCY || 'د.أ';
 
-  const state = { company: [], contractor: [], staff: [], car: [], misc: [], sites: [], lists: [] };
+  const state = { company: [], worklog: [], contractor: [], staff: [], car: [], misc: [], sites: [], lists: [] };
   const ui = { tab: 'summary', filters: {}, dialogLocked: false };
 
   /* ---------- أدوات صغيرة ---------- */
@@ -46,6 +46,7 @@
   const chipsFor = str => { const a = ids(str); return a.length ? a.map(chip) : '—'; };
   const sortSites = a => a.slice().sort((x, y) => String(x).localeCompare(String(y), 'en', { numeric: true }));
   const people = () => Array.from(new Set(state.staff.map(r => r.person).filter(Boolean)));
+  const teams = () => Array.from(new Set(state.worklog.map(r => r.team).filter(Boolean)));
   const deductLabels = () => Array.from(new Set(['ضمان اجتماعي', 'سلفة', 'غرامة'].concat(state.contractor.map(r => r.label).filter(Boolean))));
   const companyDeductLabels = () => Array.from(new Set(['ضمان اجتماعي للموظفين', 'غرامة', 'خصم آخر'].concat(state.company.map(r => r.label).filter(Boolean))));
   // رقم الموقع: 3 أو 4 أرقام فقط (نقبل الأرقام العربية ونحوّلها)
@@ -76,6 +77,26 @@
     : r.scopeType === SCOPE.MONTH ? h('span', { class: 'chip gray' }, monthLabel(r.month)) : h('span', { class: 'chip gray' }, 'عام');
 
   const SECTIONS = {
+    worklog: {
+      label: 'سجل العمل', addLabel: 'تسجيل عمل',
+      fields: [
+        { key: 'date', label: 'التاريخ', type: 'date', required: true, def: todayISO },
+        { key: 'team', label: 'اسم التيم', type: 'text', required: true, list: teams },
+        { key: 'site', label: 'الموقع', type: 'site', required: true },
+        { key: 'tasks', label: 'الأعمال المنجزة', type: 'textarea', required: true, hint: () => 'يمكنك كتابة كل عمل في سطر مستقل.' },
+        { key: 'startTime', label: 'وقت البداية (اختياري)', type: 'time' },
+        { key: 'endTime', label: 'وقت النهاية (اختياري)', type: 'time' },
+        { key: 'notes', label: 'ملاحظات', type: 'textarea' }
+      ],
+      cols: [
+        { label: 'التاريخ', r: r => dateEl(r.date) },
+        { label: 'التيم', r: r => r.team },
+        { label: 'الموقع', r: r => chip(r.site) },
+        { label: 'الأعمال المنجزة', r: r => r.tasks },
+        { label: 'الوقت', r: r => r.startTime || r.endTime ? h('span', { class: 'num' }, (r.startTime || '—') + ' – ' + (r.endTime || '—')) : '—' },
+        { label: 'ملاحظات', r: r => r.notes || '' }
+      ]
+    },
     company: {
       label: 'الشركة الرئيسية', addLabel: 'تسجيل حركة',
       fields: [
@@ -190,7 +211,7 @@
   /* ---------- الفلاتر ---------- */
   const filtersFor = t => (ui.filters[t] = ui.filters[t] || { month: '', site: '', person: '' });
   const entryDate = (sec, r) => (sec !== 'contractor' && sec !== 'staff' && r.scopeType === SCOPE.MONTH && r.month) ? r.month + '-01' : (r.date || '');
-  const entrySites = (sec, r) => (sec === 'company' || sec === 'contractor') ? [r.site] : (sec === 'staff' || r.scopeType === SCOPE.SITES) ? ids(r.sites) : [];
+  const entrySites = (sec, r) => (sec === 'company' || sec === 'contractor' || sec === 'worklog') ? [r.site] : (sec === 'staff' || r.scopeType === SCOPE.SITES) ? ids(r.sites) : [];
   function matches(sec, r, f) {
     if (f.month && entryDate(sec, r).slice(0, 7) !== f.month) return false;
     if (f.site && entrySites(sec, r).indexOf(f.site) === -1) return false;
@@ -340,7 +361,7 @@
         h('td', { class: 'act' },
           h('button', { class: 'btn small', type: 'button', onclick: () => openForm(sec, r) }, 'تعديل'), ' ',
           h('button', { class: 'btn small danger', type: 'button', onclick: () => removeRecord(sec, r) }, 'حذف'))))),
-      h('tfoot', null, h('tr', null, h('td', { colspan: S.cols.length + 1 },
+      sec === 'worklog' ? h('tfoot', null, h('tr', null, h('td', { colspan: S.cols.length + 1 }, rows.length + ' سجل عمل'))) : h('tfoot', null, h('tr', null, h('td', { colspan: S.cols.length + 1 },
         h('span', { class: 'addrow', style: 'justify-content:space-between' },
           h('span', null, (sec === 'company' || sec === 'contractor' || sec === 'staff' ? 'الصافي (' : 'الإجمالي (') + rows.length + ' سجل)'), h('b', { class: 'num' }, fmt(total) + ' ' + CUR))))))));
     return root;
@@ -368,7 +389,7 @@
       case 'number': case 'money':
         ctl = h('input', { id, type: 'number', step: 'any', min: '0', inputmode: 'decimal', value: vals[f.key] === undefined ? '' : vals[f.key], oninput: e => { vals[f.key] = e.target.value; } });
         break;
-      case 'date': case 'month':
+      case 'date': case 'month': case 'time':
         ctl = h('input', { id, type: f.type, value: vals[f.key] || '', oninput: e => { vals[f.key] = e.target.value; } });
         break;
       case 'textarea':
