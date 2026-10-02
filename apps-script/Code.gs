@@ -87,7 +87,7 @@ const STORED_VALUES = {
   role: { 'مهندس': 'Engineer', 'فني': 'Technician' },
   scopeType: { 'عام': 'General', 'مواقع': 'Sites', 'شهر': 'Month' },
   list: { 'بند': 'Category', 'سيارة': 'Car' },
-  carMode: { 'سيارة مضمنة': 'Included Car', 'سيارة شخص': 'Person Car' }
+  carMode: { 'سيارة مضمنة': 'Included Car', 'حساب على شخص': 'Charged to Person', 'سيارة شخص': 'Person Car' }
 };
 const UI_VALUES = {};
 Object.keys(STORED_VALUES).forEach(key => {
