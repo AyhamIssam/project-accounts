@@ -23,8 +23,8 @@ const SCHEMA = {
     cols: [['id', 'ID'], ['date', 'Date'], ['team', 'Team'], ['site', 'Site'],
            ['tasks', 'Work Performed'], ['startTime', 'Start Time'], ['endTime', 'End Time'],
            ['notes', 'Notes'], ['created', 'Created At'], ['members', 'Members'], ['sites', 'Sites'],
-           ['car', 'Car Used'], ['carMode', 'Car Accounting'], ['carPerson', 'Charged To']],
-    text: ['id', 'date', 'team', 'site', 'tasks', 'startTime', 'endTime', 'notes', 'created', 'members', 'sites', 'car', 'carMode', 'carPerson'],
+           ['car', 'Car Used'], ['carMode', 'Car Accounting'], ['carPerson', 'Charged To'], ['teamType', 'Team Type']],
+    text: ['id', 'date', 'team', 'site', 'tasks', 'startTime', 'endTime', 'notes', 'created', 'members', 'sites', 'car', 'carMode', 'carPerson', 'teamType'],
     hideId: true
   },
   company: {
@@ -87,7 +87,8 @@ const STORED_VALUES = {
   role: { 'مهندس': 'Engineer', 'فني': 'Technician' },
   scopeType: { 'عام': 'General', 'مواقع': 'Sites', 'شهر': 'Month' },
   list: { 'بند': 'Category', 'سيارة': 'Car' },
-  carMode: { 'سيارة مضمنة': 'Included Car', 'حساب على شخص': 'Charged to Person', 'سيارة شخص': 'Person Car' }
+  carMode: { 'سيارة مضمنة': 'Included Car', 'حساب على شخص': 'Charged to Person', 'سيارة شخص': 'Person Car' },
+  teamType: { 'تيم داخلي': 'Internal Team', 'تيم مقاول': 'Contractor Team' }
 };
 const UI_VALUES = {};
 Object.keys(STORED_VALUES).forEach(key => {

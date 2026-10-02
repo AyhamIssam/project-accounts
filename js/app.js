@@ -84,8 +84,9 @@
       label: 'سجل العمل', addLabel: 'تسجيل عمل',
       fields: [
         { key: 'date', label: 'التاريخ', type: 'date', required: true, def: todayISO },
-        { key: 'team', label: 'اسم التيم (اختياري)', type: 'text', list: teams },
-        { key: 'members', label: 'المهندس والفنيون', type: 'people', required: true },
+        { key: 'teamType', label: 'نوع التيم', type: 'seg', def: 'تيم داخلي', options: ['تيم داخلي', 'تيم مقاول'] },
+        { key: 'team', label: v => v.teamType === 'تيم مقاول' ? 'اسم المقاول أو التيم' : 'اسم التيم (اختياري)', type: 'text', list: teams, required: v => v.teamType === 'تيم مقاول' },
+        { key: 'members', label: 'المهندس والفنيون', type: 'people', required: true, showIf: v => v.teamType !== 'تيم مقاول' },
         { key: 'sites', label: 'الموقع أو المواقع', type: 'sites', required: true },
         { key: 'tasks', label: 'الأعمال المنجزة', type: 'textarea', required: true, hint: () => 'يمكنك كتابة كل عمل في سطر مستقل.' },
         { key: 'startTime', label: 'وقت البداية (اختياري)', type: 'time' },
@@ -97,7 +98,9 @@
       ],
       cols: [
         { label: 'التاريخ', r: r => dateEl(r.date) },
-        { label: 'التيم والأسماء', r: r => [r.team ? h('b', null, r.team + ': ') : '', ids(r.members).join('، ') || '—'] },
+        { label: 'التيم والأسماء', r: r => r.teamType === 'تيم مقاول'
+          ? [h('span', { class: 'chip gray' }, 'مقاول'), ' ', r.team || '—']
+          : [r.team ? h('b', null, r.team + ': ') : '', ids(r.members).join('، ') || '—'] },
         { label: 'المواقع', r: r => chipsFor(r.sites || r.site) },
         { label: 'الأعمال المنجزة', r: r => r.tasks },
         { label: 'الوقت', r: r => r.startTime || r.endTime ? h('span', { class: 'num' }, (r.startTime || '—') + ' – ' + (r.endTime || '—')) : '—' },
@@ -495,6 +498,7 @@
     S.fields.forEach(f => { vals[f.key] = f.def !== undefined ? (typeof f.def === 'function' ? f.def() : f.def) : ''; });
     if (rec) Object.assign(vals, rec);
     if (sec === 'worklog' && rec) vals.carMode = carModeText(vals.carMode);
+    if (sec === 'worklog' && !vals.teamType) vals.teamType = 'تيم داخلي';
     const visible = f => !f.showIf || f.showIf(vals);
     let error = '', busy = false;
 
