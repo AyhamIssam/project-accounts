@@ -86,8 +86,8 @@ const STORED_VALUES = {
   kind: { 'حساب': 'Account', 'مستحق': 'Amount Due', 'خصم': 'Deduction', 'دفعة مستلمة': 'Payment Received', 'يومي': 'Daily', 'على الموقع': 'By Site', 'حضور': 'Attendance', 'دفعة': 'Payment' },
   role: { 'مهندس': 'Engineer', 'فني': 'Technician' },
   scopeType: { 'عام': 'General', 'مواقع': 'Sites', 'شهر': 'Month' },
-  list: { 'بند': 'Category' },
-  carMode: { 'سيارة مضمنة': 'Included Car', 'حساب على شخص': 'Charged to Person' }
+  list: { 'بند': 'Category', 'سيارة': 'Car' },
+  carMode: { 'سيارة مضمنة': 'Included Car', 'سيارة شخص': 'Person Car' }
 };
 const UI_VALUES = {};
 Object.keys(STORED_VALUES).forEach(key => {

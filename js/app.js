@@ -2,7 +2,7 @@
 // الأقسام معرّفة في SECTIONS (الحقول + أعمدة الجدول). لإضافة حقل أو قسم عدّل هناك وفي Code.gs.
 (function () {
   'use strict';
-  const { KIND, ROLE, SCOPE, CKIND, COMPANY_KIND, LIST_CATEGORY } = window.SCHEMA;
+  const { KIND, ROLE, SCOPE, CKIND, COMPANY_KIND, LIST_CATEGORY, LIST_CAR } = window.SCHEMA;
   const CFG = window.APP_CONFIG || {};
   const CUR = CFG.CURRENCY || 'د.أ';
 
@@ -55,6 +55,7 @@
   const validSite = v => /^\d{3,4}$/.test(v);
   const SITE_ERR = 'رقم الموقع لازم يكون 3 أو 4 أرقام (مثل 101 أو 2103)';
   const categories = () => state.lists.filter(l => l.list === LIST_CATEGORY).map(l => l.value);
+  const cars = () => state.lists.filter(l => l.list === LIST_CAR).map(l => l.value);
 
   let toastTimer;
   function toast(msg, bad) {
@@ -88,9 +89,9 @@
         { key: 'tasks', label: 'الأعمال المنجزة', type: 'textarea', required: true, hint: () => 'يمكنك كتابة كل عمل في سطر مستقل.' },
         { key: 'startTime', label: 'وقت البداية (اختياري)', type: 'time' },
         { key: 'endTime', label: 'وقت النهاية (اختياري)', type: 'time' },
-        { key: 'car', label: 'السيارة المستخدمة (اختياري)', type: 'text' },
-        { key: 'carMode', label: 'حساب السيارة', type: 'seg', def: 'سيارة مضمنة', options: ['سيارة مضمنة', 'حساب على شخص'], showIf: v => !!String(v.car || '').trim() },
-        { key: 'carPerson', label: 'السيارة محسوبة على', type: 'text', required: true, list: workPeople, showIf: v => v.carMode === 'حساب على شخص' && !!String(v.car || '').trim() },
+        { key: 'car', label: 'السيارة المستخدمة (اختياري)', type: 'carlist' },
+        { key: 'carMode', label: 'نوع السيارة', type: 'seg', def: 'سيارة مضمنة', options: ['سيارة مضمنة', 'سيارة شخص'], showIf: v => !!String(v.car || '').trim() },
+        { key: 'carPerson', label: 'صاحب السيارة', type: 'text', required: true, list: workPeople, showIf: v => v.carMode === 'سيارة شخص' && !!String(v.car || '').trim() },
         { key: 'notes', label: 'ملاحظات', type: 'textarea' }
       ],
       cols: [
@@ -451,6 +452,21 @@
           } }, '+ موقع جديد'));
         break;
       }
+      case 'carlist': {
+        const opts = cars().concat(vals[f.key] && cars().indexOf(vals[f.key]) === -1 ? [vals[f.key]] : []);
+        ctl = h('div', { class: 'addrow' },
+          h('select', { id, value: vals[f.key] || '', onchange: e => { vals[f.key] = e.target.value; rerender(); } },
+            h('option', { value: '' }, 'بدون سيارة'), opts.map(c => h('option', { value: c }, c))),
+          h('button', { class: 'btn', type: 'button', onclick: async () => {
+            const name = (prompt('اسم أو رقم السيارة الجديدة؟') || '').trim();
+            if (!name) return;
+            if (cars().indexOf(name) === -1) {
+              try { state.lists.push(await Api.add('lists', { list: LIST_CAR, value: name })); } catch (e) { return toast(e.message, true); }
+            }
+            vals[f.key] = name; rerender();
+          } }, '+ سيارة'));
+        break;
+      }
       case 'people': {
         const sel = ids(vals[f.key]);
         const set = a => { vals[f.key] = Array.from(new Set(a)).join(','); rerender(); };
@@ -564,6 +580,14 @@
           async it => {
             try { await Api.remove('lists', it.id); state.lists = state.lists.filter(l => l.id !== it.id); draw(); } catch (e) { toast(e.message, true); }
           }, 'بند جديد'),
+        listBlock('قائمة السيارات', state.lists.filter(l => l.list === LIST_CAR).map(l => ({ id: l.id, label: l.value })),
+          async v => {
+            if (cars().indexOf(v) !== -1) return toast('السيارة موجودة مسبقاً', true);
+            try { state.lists.push(await Api.add('lists', { list: LIST_CAR, value: v })); draw(); } catch (e) { toast(e.message, true); }
+          },
+          async it => {
+            try { await Api.remove('lists', it.id); state.lists = state.lists.filter(l => l.id !== it.id); draw(); } catch (e) { toast(e.message, true); }
+          }, 'اسم أو رقم السيارة'),
         Api.isDemo ? h('button', { class: 'btn danger', type: 'button', onclick: async () => {
           if (!confirm('إعادة البيانات التجريبية إلى وضعها الأصلي؟')) return;
           Api.resetDemo(); await load(); closeDialog();

@@ -24,7 +24,7 @@ Arabic (RTL) static site for construction-project accounting. Data lives in Goog
 - `car`: id, date, amount, scopeType (`عام`/`مواقع`/`شهر` in the UI; `General`/`Sites`/`Month` in Sheets), sites, month (`YYYY-MM`), person (optional link to a staff name), notes, created
 - `misc`: same as car plus `category`
 - `sites`: `id` **is the site number itself**, must match `^\d{3,4}$` (validated in `app.js` and `Code.gs`; renaming is not supported; delete + add)
-- `lists`: id, list (`بند` in the UI, `Category` in Sheets), value
+- `lists`: id, list (`بند`/`سيارة` in the UI, `Category`/`Car` in Sheets), value
 
 Multi-site values are stored as one comma-separated string of site ids.
 
