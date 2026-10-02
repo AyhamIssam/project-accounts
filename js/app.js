@@ -47,6 +47,7 @@
   const sortSites = a => a.slice().sort((x, y) => String(x).localeCompare(String(y), 'en', { numeric: true }));
   const people = () => Array.from(new Set(state.staff.map(r => r.person).filter(Boolean)));
   const teams = () => Array.from(new Set(state.worklog.map(r => r.team).filter(Boolean)));
+  const workPeople = () => Array.from(new Set(people().concat(state.worklog.flatMap(r => ids(r.members))).filter(Boolean)));
   const deductLabels = () => Array.from(new Set(['ضمان اجتماعي', 'سلفة', 'غرامة'].concat(state.contractor.map(r => r.label).filter(Boolean))));
   const companyDeductLabels = () => Array.from(new Set(['ضمان اجتماعي للموظفين', 'غرامة', 'خصم آخر'].concat(state.company.map(r => r.label).filter(Boolean))));
   // رقم الموقع: 3 أو 4 أرقام فقط (نقبل الأرقام العربية ونحوّلها)
@@ -81,19 +82,24 @@
       label: 'سجل العمل', addLabel: 'تسجيل عمل',
       fields: [
         { key: 'date', label: 'التاريخ', type: 'date', required: true, def: todayISO },
-        { key: 'team', label: 'اسم التيم', type: 'text', required: true, list: teams },
-        { key: 'site', label: 'الموقع', type: 'site', required: true },
+        { key: 'team', label: 'اسم التيم (اختياري)', type: 'text', list: teams },
+        { key: 'members', label: 'المهندس والفنيون', type: 'people', required: true },
+        { key: 'sites', label: 'الموقع أو المواقع', type: 'sites', required: true },
         { key: 'tasks', label: 'الأعمال المنجزة', type: 'textarea', required: true, hint: () => 'يمكنك كتابة كل عمل في سطر مستقل.' },
         { key: 'startTime', label: 'وقت البداية (اختياري)', type: 'time' },
         { key: 'endTime', label: 'وقت النهاية (اختياري)', type: 'time' },
+        { key: 'car', label: 'السيارة المستخدمة (اختياري)', type: 'text' },
+        { key: 'carMode', label: 'حساب السيارة', type: 'seg', def: 'سيارة مضمنة', options: ['سيارة مضمنة', 'حساب على شخص'], showIf: v => !!String(v.car || '').trim() },
+        { key: 'carPerson', label: 'السيارة محسوبة على', type: 'text', required: true, list: workPeople, showIf: v => v.carMode === 'حساب على شخص' && !!String(v.car || '').trim() },
         { key: 'notes', label: 'ملاحظات', type: 'textarea' }
       ],
       cols: [
         { label: 'التاريخ', r: r => dateEl(r.date) },
-        { label: 'التيم', r: r => r.team },
-        { label: 'الموقع', r: r => chip(r.site) },
+        { label: 'التيم والأسماء', r: r => [r.team ? h('b', null, r.team + ': ') : '', ids(r.members).join('، ') || '—'] },
+        { label: 'المواقع', r: r => chipsFor(r.sites || r.site) },
         { label: 'الأعمال المنجزة', r: r => r.tasks },
         { label: 'الوقت', r: r => r.startTime || r.endTime ? h('span', { class: 'num' }, (r.startTime || '—') + ' – ' + (r.endTime || '—')) : '—' },
+        { label: 'السيارة', r: r => r.car ? [r.car, ' — ', r.carMode || 'سيارة مضمنة', r.carPerson ? ' (' + r.carPerson + ')' : ''] : '—' },
         { label: 'ملاحظات', r: r => r.notes || '' }
       ]
     },
@@ -211,7 +217,7 @@
   /* ---------- الفلاتر ---------- */
   const filtersFor = t => (ui.filters[t] = ui.filters[t] || { month: '', site: '', person: '' });
   const entryDate = (sec, r) => (sec !== 'contractor' && sec !== 'staff' && r.scopeType === SCOPE.MONTH && r.month) ? r.month + '-01' : (r.date || '');
-  const entrySites = (sec, r) => (sec === 'company' || sec === 'contractor' || sec === 'worklog') ? [r.site] : (sec === 'staff' || r.scopeType === SCOPE.SITES) ? ids(r.sites) : [];
+  const entrySites = (sec, r) => sec === 'worklog' ? ids(r.sites || r.site) : (sec === 'company' || sec === 'contractor') ? [r.site] : (sec === 'staff' || r.scopeType === SCOPE.SITES) ? ids(r.sites) : [];
   function matches(sec, r, f) {
     if (f.month && entryDate(sec, r).slice(0, 7) !== f.month) return false;
     if (f.site && entrySites(sec, r).indexOf(f.site) === -1) return false;
@@ -443,6 +449,19 @@
             }
             set(sel.indexOf(name) === -1 ? sel.concat(name) : sel);
           } }, '+ موقع جديد'));
+        break;
+      }
+      case 'people': {
+        const sel = ids(vals[f.key]);
+        const set = a => { vals[f.key] = Array.from(new Set(a)).join(','); rerender(); };
+        const all = Array.from(new Set(workPeople().concat(sel)));
+        ctl = h('div', { class: 'chips' },
+          all.map(p => h('button', { type: 'button', 'aria-pressed': String(sel.indexOf(p) !== -1),
+            onclick: () => set(sel.indexOf(p) !== -1 ? sel.filter(x => x !== p) : sel.concat(p)) }, p)),
+          h('button', { type: 'button', class: 'add', onclick: () => {
+            const name = (prompt('اسم المهندس أو الفني؟') || '').trim();
+            if (name) set(sel.concat(name));
+          } }, '+ اسم جديد'));
         break;
       }
       default: ctl = null;

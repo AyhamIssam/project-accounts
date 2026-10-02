@@ -22,8 +22,9 @@ const SCHEMA = {
     name: 'Work Log',
     cols: [['id', 'ID'], ['date', 'Date'], ['team', 'Team'], ['site', 'Site'],
            ['tasks', 'Work Performed'], ['startTime', 'Start Time'], ['endTime', 'End Time'],
-           ['notes', 'Notes'], ['created', 'Created At']],
-    text: ['id', 'date', 'team', 'site', 'tasks', 'startTime', 'endTime', 'notes', 'created'],
+           ['notes', 'Notes'], ['created', 'Created At'], ['members', 'Members'], ['sites', 'Sites'],
+           ['car', 'Car Used'], ['carMode', 'Car Accounting'], ['carPerson', 'Charged To']],
+    text: ['id', 'date', 'team', 'site', 'tasks', 'startTime', 'endTime', 'notes', 'created', 'members', 'sites', 'car', 'carMode', 'carPerson'],
     hideId: true
   },
   company: {
@@ -85,7 +86,8 @@ const STORED_VALUES = {
   kind: { 'حساب': 'Account', 'مستحق': 'Amount Due', 'خصم': 'Deduction', 'دفعة مستلمة': 'Payment Received', 'يومي': 'Daily', 'على الموقع': 'By Site', 'حضور': 'Attendance', 'دفعة': 'Payment' },
   role: { 'مهندس': 'Engineer', 'فني': 'Technician' },
   scopeType: { 'عام': 'General', 'مواقع': 'Sites', 'شهر': 'Month' },
-  list: { 'بند': 'Category' }
+  list: { 'بند': 'Category' },
+  carMode: { 'سيارة مضمنة': 'Included Car', 'حساب على شخص': 'Charged to Person' }
 };
 const UI_VALUES = {};
 Object.keys(STORED_VALUES).forEach(key => {
