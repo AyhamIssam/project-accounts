@@ -135,24 +135,26 @@
       ]
     },
     contractor: {
-      label: 'المقاول', addLabel: 'تسجيل حساب أو خصم',
+      label: 'المقاول', addLabel: 'تسجيل حساب أو دفعة',
       fields: [
         {
           key: 'kind', label: 'نوع التسجيل', type: 'seg', def: CKIND.ACCOUNT,
-          options: [{ v: CKIND.ACCOUNT, t: 'حساب موقع' }, { v: CKIND.DEDUCT, t: 'خصم' }],
-          hint: v => v.kind === CKIND.DEDUCT ? 'الخصم يُطرح من مستحقات المقاول (مثل الضمان الاجتماعي لموظفيه). اختر موقعاً أو اتركه عاماً.' : ''
+          options: [{ v: CKIND.ACCOUNT, t: 'حساب موقع' }, { v: CKIND.PAYMENT, t: 'دفعة للمقاول' }, { v: CKIND.ADVANCE, t: 'سلفة للمقاول' }, { v: CKIND.DEDUCT, t: 'خصم' }],
+          hint: v => v.kind === CKIND.DEDUCT ? 'الخصم يُطرح من مستحقات المقاول (مثل الضمان الاجتماعي لموظفيه).'
+            : v.kind === CKIND.PAYMENT ? 'مبلغ دفعته للمقاول ويُخصم من رصيده المتبقي.'
+            : v.kind === CKIND.ADVANCE ? 'سلفة استلمها المقاول وتُخصم من رصيده المتبقي.' : ''
         },
         { key: 'date', label: 'التاريخ', type: 'date', required: true, def: todayISO },
-        { key: 'site', label: 'الموقع', type: 'site', required: v => v.kind !== CKIND.DEDUCT, placeholder: v => v.kind === CKIND.DEDUCT ? 'عام (بدون موقع)' : 'اختر الموقع' },
+        { key: 'site', label: v => v.kind === CKIND.ACCOUNT ? 'الموقع' : 'الموقع (اختياري)', type: 'site', required: v => v.kind === CKIND.ACCOUNT, placeholder: v => v.kind === CKIND.ACCOUNT ? 'اختر الموقع' : 'عام (بدون موقع)' },
         { key: 'label', label: 'بند الخصم', type: 'text', required: true, list: deductLabels, showIf: v => v.kind === CKIND.DEDUCT },
-        { key: 'amount', label: v => v.kind === CKIND.DEDUCT ? 'مبلغ الخصم (' + CUR + ')' : 'الحساب (' + CUR + ')', type: 'money', required: true },
-        { key: 'notes', label: v => v.kind === CKIND.DEDUCT ? 'ملاحظات' : 'إضافة أو تبرير للحساب', type: 'textarea' }
+        { key: 'amount', label: v => v.kind === CKIND.ACCOUNT ? 'الحساب (' + CUR + ')' : v.kind === CKIND.DEDUCT ? 'مبلغ الخصم (' + CUR + ')' : v.kind === CKIND.ADVANCE ? 'مبلغ السلفة (' + CUR + ')' : 'مبلغ الدفعة (' + CUR + ')', type: 'money', required: true },
+        { key: 'notes', label: v => v.kind === CKIND.ACCOUNT ? 'إضافة أو تبرير للحساب' : 'ملاحظات', type: 'textarea' }
       ],
       cols: [
         { label: 'التاريخ', r: r => dateEl(r.date) },
-        { label: 'النوع', r: r => h('span', { class: 'chip ' + (r.kind === CKIND.DEDUCT ? 'warn' : 'gray') }, r.kind === CKIND.DEDUCT ? 'خصم' : 'حساب') },
+        { label: 'النوع', r: r => h('span', { class: 'chip ' + (r.kind === CKIND.ACCOUNT ? 'gray' : 'warn') }, r.kind === CKIND.ACCOUNT ? 'حساب' : r.kind === CKIND.PAYMENT ? 'دفعة' : r.kind === CKIND.ADVANCE ? 'سلفة' : 'خصم') },
         { label: 'الموقع', r: r => r.site ? chip(r.site) : h('span', { class: 'chip gray' }, 'عام') },
-        { label: 'المبلغ', n: true, r: r => r.kind === CKIND.DEDUCT ? h('span', { class: 'num neg' }, '-' + fmt(r.amount)) : money(r.amount) },
+        { label: 'المبلغ', n: true, r: r => r.kind === CKIND.ACCOUNT ? money(r.amount) : h('span', { class: 'num neg' }, '-' + fmt(r.amount)) },
         { label: 'البند / التبرير', r: r => [r.kind === CKIND.DEDUCT ? r.label : '', r.kind === CKIND.DEDUCT && r.notes ? ' — ' : '', r.notes || ''] }
       ]
     },
@@ -321,12 +323,16 @@
       h('button', { class: 'btn primary', type: 'button', onclick: () => openForm(sec, null) }, '+ ' + S.addLabel)));
 
     if (sec === 'contractor' && rows.length) {
-      const gross = rows.filter(r => r.kind !== CKIND.DEDUCT).reduce((a, r) => a + (Number(r.amount) || 0), 0);
+      const gross = rows.filter(r => r.kind === CKIND.ACCOUNT).reduce((a, r) => a + (Number(r.amount) || 0), 0);
       const ded = rows.filter(r => r.kind === CKIND.DEDUCT).reduce((a, r) => a + (Number(r.amount) || 0), 0);
+      const paid = rows.filter(r => r.kind === CKIND.PAYMENT).reduce((a, r) => a + (Number(r.amount) || 0), 0);
+      const advances = rows.filter(r => r.kind === CKIND.ADVANCE).reduce((a, r) => a + (Number(r.amount) || 0), 0);
       root.append(h('div', { class: 'kpis' },
         h('div', { class: 'kpi' }, h('span', null, 'إجمالي الحسابات'), h('b', null, fmt(gross))),
         h('div', { class: 'kpi' }, h('span', null, 'الخصومات'), h('b', { class: 'neg' }, '-' + fmt(ded))),
-        h('div', { class: 'kpi main' }, h('span', null, 'الصافي المستحق للمقاول'), h('b', null, fmt(gross - ded)), h('span', null, CUR))));
+        h('div', { class: 'kpi' }, h('span', null, 'الدفعات'), h('b', { class: 'neg' }, '-' + fmt(paid))),
+        h('div', { class: 'kpi' }, h('span', null, 'السلف'), h('b', { class: 'neg' }, '-' + fmt(advances))),
+        h('div', { class: 'kpi main' }, h('span', null, 'المتبقي للمقاول'), h('b', null, fmt(gross - ded - paid - advances)), h('span', null, CUR))));
     }
 
     if (sec === 'company' && rows.length) {
@@ -369,7 +375,7 @@
       root.append(h('div', { class: 'tbl-wrap' }, h('div', { class: 'empty' }, 'لا توجد سجلات ضمن هذا الفلتر.')));
       return root;
     }
-    const total = rows.reduce((s, r) => s + (r.kind === KIND.PRESENT ? 0 : (r.kind === CKIND.DEDUCT || r.kind === KIND.PAYMENT || r.kind === COMPANY_KIND.DEDUCT || r.kind === COMPANY_KIND.RECEIVED ? -1 : 1) * (Number(r.amount) || 0)), 0);
+    const total = rows.reduce((s, r) => s + (r.kind === KIND.PRESENT ? 0 : (r.kind === CKIND.DEDUCT || r.kind === CKIND.PAYMENT || r.kind === CKIND.ADVANCE || r.kind === KIND.PAYMENT || r.kind === COMPANY_KIND.DEDUCT || r.kind === COMPANY_KIND.RECEIVED ? -1 : 1) * (Number(r.amount) || 0)), 0);
     root.append(h('div', { class: 'tbl-wrap' }, h('table', { class: 'tbl cards' },
       h('thead', null, h('tr', null, S.cols.map(c => h('th', { class: c.n ? 'n' : '' }, c.label)), h('th', null, ''))),
       h('tbody', null, rows.map(r => h('tr', null,

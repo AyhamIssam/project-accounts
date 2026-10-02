@@ -25,10 +25,10 @@
     const push = (src, rec, site, date, amount, extra) =>
       lines.push(Object.assign({ src, id: rec.id, site, date: date || '', amount }, extra || {}));
 
-    // 1) المقاول: كل سجل لموقع واحد. الخصم يُسجَّل بقيمة سالبة (ويمكن أن يكون بدون موقع = عام)
+    // 1) المقاول: الحساب موجب، والخصم والدفعة والسلفة تُطرح من رصيده.
     st.contractor.forEach(r => {
       const a = Number(r.amount) || 0;
-      push('contractor', r, r.site || null, r.date, r.kind === CKIND.DEDUCT ? -a : a);
+      push('contractor', r, r.site || null, r.date, r.kind === CKIND.ACCOUNT ? a : -a);
     });
 
     // 2) المهندس والفنيين
