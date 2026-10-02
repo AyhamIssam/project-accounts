@@ -41,6 +41,7 @@
   const MONTHS = ['كانون الثاني', 'شباط', 'آذار', 'نيسان', 'أيار', 'حزيران', 'تموز', 'آب', 'أيلول', 'تشرين الأول', 'تشرين الثاني', 'كانون الأول'];
   const monthLabel = ym => { const [y, m] = String(ym || '').split('-'); return MONTHS[Number(m) - 1] ? MONTHS[Number(m) - 1] + ' ' + y : ym || ''; };
   const dateEl = d => h('span', { class: 'num' }, d || '—');
+  const carModeText = v => (v === 'Charged to Person' || v === 'حساب على شخص' || v === 'Person Car') ? 'سيارة شخص' : v === 'Included Car' ? 'سيارة مضمنة' : (v || 'سيارة مضمنة');
   const siteExists = id => state.sites.some(s => s.id === id);
   const chip = id => h('span', { class: 'chip' + (siteExists(id) ? '' : ' gone') }, id || '—');
   const chipsFor = str => { const a = ids(str); return a.length ? a.map(chip) : '—'; };
@@ -100,7 +101,7 @@
         { label: 'المواقع', r: r => chipsFor(r.sites || r.site) },
         { label: 'الأعمال المنجزة', r: r => r.tasks },
         { label: 'الوقت', r: r => r.startTime || r.endTime ? h('span', { class: 'num' }, (r.startTime || '—') + ' – ' + (r.endTime || '—')) : '—' },
-        { label: 'السيارة', r: r => r.car ? [r.car, ' — ', r.carMode || 'سيارة مضمنة', r.carPerson ? ' (' + r.carPerson + ')' : ''] : '—' },
+        { label: 'السيارة', r: r => r.car ? [r.car, ' — ', carModeText(r.carMode), r.carPerson ? ' (' + r.carPerson + ')' : ''] : '—' },
         { label: 'ملاحظات', r: r => r.notes || '' }
       ]
     },
@@ -490,6 +491,7 @@
     const vals = {};
     S.fields.forEach(f => { vals[f.key] = f.def !== undefined ? (typeof f.def === 'function' ? f.def() : f.def) : ''; });
     if (rec) Object.assign(vals, rec);
+    if (sec === 'worklog' && rec) vals.carMode = carModeText(vals.carMode);
     const visible = f => !f.showIf || f.showIf(vals);
     let error = '', busy = false;
 
