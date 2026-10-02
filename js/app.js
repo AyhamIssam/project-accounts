@@ -47,6 +47,7 @@
   const chipsFor = str => { const a = ids(str); return a.length ? a.map(chip) : '—'; };
   const sortSites = a => a.slice().sort((x, y) => String(x).localeCompare(String(y), 'en', { numeric: true }));
   const people = () => Array.from(new Set(state.staff.map(r => r.person).filter(Boolean)));
+  const engineers = () => Array.from(new Set(state.staff.filter(r => r.role === 'مهندس').map(r => r.person).filter(Boolean)));
   const teams = () => Array.from(new Set(state.worklog.map(r => r.team).filter(Boolean)));
   const workPeople = () => Array.from(new Set(people().concat(state.worklog.flatMap(r => ids(r.members))).filter(Boolean)));
   const deductLabels = () => Array.from(new Set(['ضمان اجتماعي', 'سلفة', 'غرامة'].concat(state.contractor.map(r => r.label).filter(Boolean))));
@@ -87,6 +88,7 @@
         { key: 'teamType', label: 'نوع التيم', type: 'seg', def: 'تيم داخلي', options: ['تيم داخلي', 'تيم مقاول'] },
         { key: 'team', label: v => v.teamType === 'تيم مقاول' ? 'اسم المقاول أو التيم' : 'اسم التيم (اختياري)', type: 'text', list: teams, required: v => v.teamType === 'تيم مقاول' },
         { key: 'members', label: 'المهندس والفنيون', type: 'people', required: true, showIf: v => v.teamType !== 'تيم مقاول' },
+        { key: 'engineer', label: 'المهندس المسؤول (اختياري)', type: 'select', options: engineers, placeholder: 'بدون مهندس', showIf: v => v.teamType === 'تيم مقاول' },
         { key: 'sites', label: 'الموقع أو المواقع', type: 'sites', required: true },
         { key: 'tasks', label: 'الأعمال المنجزة', type: 'textarea', required: true, hint: () => 'يمكنك كتابة كل عمل في سطر مستقل.' },
         { key: 'startTime', label: 'وقت البداية (اختياري)', type: 'time' },
@@ -99,7 +101,7 @@
       cols: [
         { label: 'التاريخ', r: r => dateEl(r.date) },
         { label: 'التيم والأسماء', r: r => r.teamType === 'تيم مقاول'
-          ? [h('span', { class: 'chip gray' }, 'مقاول'), ' ', r.team || '—']
+          ? [h('span', { class: 'chip gray' }, 'مقاول'), ' ', r.team || '—', r.engineer ? ' — المهندس: ' + r.engineer : '']
           : [r.team ? h('b', null, r.team + ': ') : '', ids(r.members).join('، ') || '—'] },
         { label: 'المواقع', r: r => chipsFor(r.sites || r.site) },
         { label: 'الأعمال المنجزة', r: r => r.tasks },

@@ -23,8 +23,9 @@ const SCHEMA = {
     cols: [['id', 'ID'], ['date', 'Date'], ['team', 'Team'], ['site', 'Site'],
            ['tasks', 'Work Performed'], ['startTime', 'Start Time'], ['endTime', 'End Time'],
            ['notes', 'Notes'], ['created', 'Created At'], ['members', 'Members'], ['sites', 'Sites'],
-           ['car', 'Car Used'], ['carMode', 'Car Accounting'], ['carPerson', 'Charged To'], ['teamType', 'Team Type']],
-    text: ['id', 'date', 'team', 'site', 'tasks', 'startTime', 'endTime', 'notes', 'created', 'members', 'sites', 'car', 'carMode', 'carPerson', 'teamType'],
+           ['car', 'Car Used'], ['carMode', 'Car Accounting'], ['carPerson', 'Charged To'], ['teamType', 'Team Type'],
+           ['engineer', 'Engineer']],
+    text: ['id', 'date', 'team', 'site', 'tasks', 'startTime', 'endTime', 'notes', 'created', 'members', 'sites', 'car', 'carMode', 'carPerson', 'teamType', 'engineer'],
     hideId: true
   },
   company: {
