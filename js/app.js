@@ -345,15 +345,18 @@
       });
       root.append(h('h2', null, 'ملخص الأشخاص'));
       root.append(h('div', { class: 'tbl-wrap' }, h('table', { class: 'tbl cards' },
-        h('thead', null, h('tr', null, h('th', null, 'الاسم'), h('th', null, 'الصفة'), h('th', { class: 'n' }, 'أيام مسجّلة'), h('th', { class: 'n' }, 'الاستحقاق'), h('th', { class: 'n' }, 'المدفوع'), h('th', { class: 'n' }, 'المتبقي'), h('th', { class: 'n' }, 'دفعات السيارة'))),
-        h('tbody', null, Object.keys(per).map(n => h('tr', null,
-          h('td', { 'data-label': 'الاسم' }, n),
-          h('td', { 'data-label': 'الصفة' }, per[n].role),
-          h('td', { class: 'n', 'data-label': 'أيام مسجّلة' }, h('span', { class: 'num' }, per[n].days.size)),
-          h('td', { class: 'n', 'data-label': 'الاستحقاق' }, money(per[n].earned)),
-          h('td', { class: 'n', 'data-label': 'المدفوع' }, money(per[n].paid)),
-          h('td', { class: 'n', 'data-label': 'المتبقي' }, money(per[n].earned - per[n].paid)),
-          h('td', { class: 'n', 'data-label': 'دفعات السيارة' }, money(state.car.filter(c => c.person === n && (!f.month || entryDate('car', c).slice(0, 7) === f.month)).reduce((a, c) => a + (Number(c.amount) || 0), 0)))))))));
+        h('thead', null, h('tr', null, h('th', null, 'الاسم'), h('th', null, 'الصفة'), h('th', { class: 'n' }, 'أيام مسجّلة'), h('th', { class: 'n' }, 'الاستحقاق'), h('th', { class: 'n' }, 'المدفوع'), h('th', { class: 'n' }, 'المتبقي مع السيارة'), h('th', { class: 'n' }, 'دفعات السيارة'))),
+        h('tbody', null, Object.keys(per).map(n => {
+          const carTotal = state.car.filter(c => c.person === n && (!f.month || entryDate('car', c).slice(0, 7) === f.month)).reduce((a, c) => a + (Number(c.amount) || 0), 0);
+          return h('tr', null,
+            h('td', { 'data-label': 'الاسم' }, n),
+            h('td', { 'data-label': 'الصفة' }, per[n].role),
+            h('td', { class: 'n', 'data-label': 'أيام مسجّلة' }, h('span', { class: 'num' }, per[n].days.size)),
+            h('td', { class: 'n', 'data-label': 'الاستحقاق' }, money(per[n].earned)),
+            h('td', { class: 'n', 'data-label': 'المدفوع' }, money(per[n].paid)),
+            h('td', { class: 'n', 'data-label': 'المتبقي مع السيارة' }, money(per[n].earned - per[n].paid + carTotal)),
+            h('td', { class: 'n', 'data-label': 'دفعات السيارة' }, money(carTotal)));
+        })))));
       root.append(h('h2', null, 'السجلات'));
     }
 
