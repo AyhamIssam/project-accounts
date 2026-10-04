@@ -41,7 +41,8 @@
   const MONTHS = ['كانون الثاني', 'شباط', 'آذار', 'نيسان', 'أيار', 'حزيران', 'تموز', 'آب', 'أيلول', 'تشرين الأول', 'تشرين الثاني', 'كانون الأول'];
   const monthLabel = ym => { const [y, m] = String(ym || '').split('-'); return MONTHS[Number(m) - 1] ? MONTHS[Number(m) - 1] + ' ' + y : ym || ''; };
   const dateEl = d => h('span', { class: 'num' }, d || '—');
-  const carModeText = v => (v === 'Charged to Person' || v === 'حساب على شخص' || v === 'Person Car') ? 'سيارة شخص' : v === 'Included Car' ? 'سيارة مضمنة' : (v || 'سيارة مضمنة');
+  const carModeText = v => (v === 'Charged to Person' || v === 'حساب على شخص' || v === 'Person Car') ? 'سيارة شخص'
+    : v === 'Included Car' ? 'سيارة مضمنة' : v === 'Contractor Car' ? 'سيارة مقاول' : (v || 'سيارة مضمنة');
   const siteExists = id => state.sites.some(s => s.id === id);
   const chip = id => h('span', { class: 'chip' + (siteExists(id) ? '' : ' gone') }, id || '—');
   const chipsFor = str => { const a = ids(str); return a.length ? a.map(chip) : '—'; };
@@ -94,7 +95,7 @@
         { key: 'startTime', label: 'وقت البداية (اختياري)', type: 'time' },
         { key: 'endTime', label: 'وقت النهاية (اختياري)', type: 'time' },
         { key: 'car', label: 'السيارة المستخدمة (اختياري)', type: 'carlist' },
-        { key: 'carMode', label: 'نوع السيارة', type: 'seg', def: 'سيارة مضمنة', options: ['سيارة مضمنة', 'سيارة شخص'], showIf: v => !!String(v.car || '').trim() },
+        { key: 'carMode', label: 'نوع السيارة', type: 'seg', def: 'سيارة مضمنة', options: ['سيارة مضمنة', 'سيارة شخص', 'سيارة مقاول'], showIf: v => !!String(v.car || '').trim() },
         { key: 'carPerson', label: 'صاحب السيارة', type: 'text', required: true, list: workPeople, showIf: v => v.carMode === 'سيارة شخص' && !!String(v.car || '').trim() },
         { key: 'notes', label: 'ملاحظات', type: 'textarea' }
       ],
@@ -165,22 +166,23 @@
         { key: 'role', label: 'الصفة', type: 'seg', options: ROLE, def: ROLE[1] },
         {
           key: 'kind', label: 'نوع التسجيل', type: 'seg', def: KIND.DAY,
-          options: [{ v: KIND.DAY, t: 'حساب على اليوم' }, { v: KIND.SITE, t: 'حساب على الموقع' }, { v: KIND.PRESENT, t: 'تسجيل حضور فقط' }, { v: KIND.PAYMENT, t: 'سلفة / دفعة' }],
+          options: [{ v: KIND.DAY, t: 'حساب على اليوم' }, { v: KIND.SITE, t: 'حساب على الموقع' }, { v: KIND.MATERIAL, t: 'مواد دفعها الشخص' }, { v: KIND.PRESENT, t: 'تسجيل حضور فقط' }, { v: KIND.PAYMENT, t: 'سلفة / دفعة' }],
           hint: v => v.kind === KIND.SITE
             ? 'المبلغ يتوزع بالتساوي على أيام الحضور المسجّلة لنفس الشخص في هذه المواقع. سجّل أيام الحضور من "تسجيل حضور فقط".'
+            : v.kind === KIND.MATERIAL ? 'قيمة مواد اشتراها الشخص من ماله. تُسجّل كمصروف على الموقع وتُضاف إلى المبلغ المستحق له.'
             : v.kind === KIND.PRESENT ? 'حضور بدون مبلغ. يُستخدم لتوزيع "الحساب على الموقع" على الأيام.'
             : v.kind === KIND.PAYMENT ? 'المبلغ الذي استلمه الشخص. يُخصم من رصيده ولا يُضاف مرة ثانية إلى تكلفة الموقع.'
             : 'إذا اشتغل بأكثر من موقع في اليوم يُقسم المبلغ بين المواقع بالتساوي.'
         },
-        { key: 'date', label: v => v.kind === KIND.PAYMENT ? 'تاريخ الدفعة' : v.kind === KIND.SITE ? 'تاريخ التسجيل' : 'اليوم', type: 'date', required: true, def: todayISO },
-        { key: 'sites', label: v => v.kind === KIND.SITE ? 'رقم الموقع أو المواقع' : 'الموقع أو المواقع', type: 'sites', required: true, showIf: v => v.kind !== KIND.PAYMENT },
-        { key: 'amount', label: 'المبلغ (' + CUR + ')', type: 'money', required: true, showIf: v => v.kind !== KIND.PRESENT },
+        { key: 'date', label: v => v.kind === KIND.PAYMENT ? 'تاريخ الدفعة' : v.kind === KIND.MATERIAL ? 'تاريخ شراء المواد' : v.kind === KIND.SITE ? 'تاريخ التسجيل' : 'اليوم', type: 'date', required: true, def: todayISO },
+        { key: 'sites', label: v => v.kind === KIND.SITE ? 'رقم الموقع أو المواقع' : v.kind === KIND.MATERIAL ? 'الموقع الذي اشتريت له المواد' : 'الموقع أو المواقع', type: 'sites', required: true, showIf: v => v.kind !== KIND.PAYMENT },
+        { key: 'amount', label: v => (v.kind === KIND.MATERIAL ? 'قيمة المواد (' : 'المبلغ (') + CUR + ')', type: 'money', required: true, showIf: v => v.kind !== KIND.PRESENT },
         { key: 'notes', label: 'ملاحظات', type: 'textarea' }
       ],
       cols: [
         { label: 'التاريخ', r: r => dateEl(r.date) },
         { label: 'الاسم', r: r => h('span', null, r.person, ' ', h('span', { class: 'chip gray' }, r.role)) },
-        { label: 'النوع', r: (r, x) => [h('span', { class: 'chip ' + (r.kind === KIND.PAYMENT ? 'warn' : 'gray') }, r.kind === KIND.PAYMENT ? 'سلفة / دفعة' : r.kind), x.warn.has(r.id) ? h('span', { class: 'chip warn', title: 'لا توجد أيام حضور مسجّلة لهذا الشخص في هذا الموقع' }, 'بدون أيام حضور') : null] },
+        { label: 'النوع', r: (r, x) => [h('span', { class: 'chip ' + (r.kind === KIND.PAYMENT ? 'warn' : 'gray') }, r.kind === KIND.PAYMENT ? 'سلفة / دفعة' : r.kind === KIND.MATERIAL ? 'مواد دفعها الشخص' : r.kind), x.warn.has(r.id) ? h('span', { class: 'chip warn', title: 'لا توجد أيام حضور مسجّلة لهذا الشخص في هذا الموقع' }, 'بدون أيام حضور') : null] },
         { label: 'المواقع', r: r => chipsFor(r.sites) },
         { label: 'المبلغ', n: true, r: r => r.kind === KIND.PRESENT ? '—' : r.kind === KIND.PAYMENT ? h('span', { class: 'num neg' }, '-' + fmt(r.amount)) : money(r.amount) },
         { label: 'ملاحظات', r: r => r.notes || '' }

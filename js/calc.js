@@ -46,6 +46,11 @@
       const sites = ids(r.sites);
       // السلفة/الدفعة تسدّد من رصيد الشخص ولا تضيف تكلفة جديدة على الموقع.
       if (r.kind === KIND.PRESENT || r.kind === KIND.PAYMENT || !amount) return;
+      // مواد دفعها الشخص من جيبه: مصروف على المواقع ومستحق له، بدون ربطها بأيام الحضور.
+      if (r.kind === KIND.MATERIAL) {
+        split(amount, sites.length).forEach((a, i) => push('staff', r, sites[i], r.date, a, { person: r.person, material: true }));
+        return;
+      }
       if (r.kind === KIND.DAY) {
         // حساب يومي: يقسم على المواقع التي عمل بها في ذلك اليوم
         split(amount, sites.length).forEach((a, i) => push('staff', r, sites[i], r.date, a, { person: r.person }));

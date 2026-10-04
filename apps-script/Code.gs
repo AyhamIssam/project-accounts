@@ -84,11 +84,11 @@ const SCHEMA = {
 
 // Translate only fixed values at the Sheets boundary. The Arabic site UI keeps its current values.
 const STORED_VALUES = {
-  kind: { 'حساب': 'Account', 'مستحق': 'Amount Due', 'خصم': 'Deduction', 'دفعة مستلمة': 'Payment Received', 'يومي': 'Daily', 'على الموقع': 'By Site', 'حضور': 'Attendance', 'دفعة': 'Payment', 'سلفة': 'Advance' },
+  kind: { 'حساب': 'Account', 'مستحق': 'Amount Due', 'خصم': 'Deduction', 'دفعة مستلمة': 'Payment Received', 'يومي': 'Daily', 'على الموقع': 'By Site', 'حضور': 'Attendance', 'دفعة': 'Payment', 'سلفة': 'Advance', 'مواد': 'Materials Paid' },
   role: { 'مهندس': 'Engineer', 'فني': 'Technician' },
   scopeType: { 'عام': 'General', 'مواقع': 'Sites', 'شهر': 'Month' },
   list: { 'بند': 'Category', 'سيارة': 'Car' },
-  carMode: { 'سيارة مضمنة': 'Included Car', 'حساب على شخص': 'Charged to Person', 'سيارة شخص': 'Person Car' },
+  carMode: { 'سيارة مضمنة': 'Included Car', 'حساب على شخص': 'Charged to Person', 'سيارة شخص': 'Person Car', 'سيارة مقاول': 'Contractor Car' },
   teamType: { 'تيم داخلي': 'Internal Team', 'تيم مقاول': 'Contractor Team' }
 };
 const UI_VALUES = {};
