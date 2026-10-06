@@ -24,11 +24,18 @@
     const warn = new Set();
     const push = (src, rec, site, date, amount, extra) =>
       lines.push(Object.assign({ src, id: rec.id, site, date: date || '', amount }, extra || {}));
+    const allSites = Array.from(new Set(st.sites.map(r => String(r.id))));
+    const distributeGeneral = (src, rec, date, amount, extra) => {
+      if (!allSites.length) return push(src, rec, null, date, amount, extra);
+      split(amount, allSites.length).forEach((a, i) => push(src, rec, allSites[i], date, a, extra));
+    };
 
     // 1) المقاول: الحساب موجب، والخصم والدفعة والسلفة تُطرح من رصيده.
     st.contractor.forEach(r => {
       const a = Number(r.amount) || 0;
-      push('contractor', r, r.site || null, r.date, r.kind === CKIND.ACCOUNT ? a : -a);
+      const amount = r.kind === CKIND.ACCOUNT ? a : -a;
+      if (r.site) push('contractor', r, r.site, r.date, amount);
+      else distributeGeneral('contractor', r, r.date, amount);
     });
 
     // 2) المهندس والفنيين
@@ -48,6 +55,10 @@
       if (r.kind === KIND.PRESENT || r.kind === KIND.PAYMENT || !amount) return;
       // مواد دفعها الشخص من جيبه: مصروف على المواقع ومستحق له، بدون ربطها بأيام الحضور.
       if (r.kind === KIND.MATERIAL) {
+        if (!sites.length) {
+          distributeGeneral('staff', r, r.date, amount, { person: r.person, material: true });
+          return;
+        }
         split(amount, sites.length).forEach((a, i) => push('staff', r, sites[i], r.date, a, { person: r.person, material: true }));
         return;
       }
@@ -78,7 +89,12 @@
           }
         }
         const date = r.scopeType === SCOPE.MONTH && r.month ? r.month + '-01' : r.date;
-        push(src, r, null, date, amount);
+        if (r.scopeType === SCOPE.MONTH) {
+          const sites = Array.from(new Set(st.sites.filter(s => r.month && s.month === r.month).map(s => String(s.id))));
+          if (sites.length) split(amount, sites.length).forEach((a, i) => push(src, r, sites[i], date, a));
+          else push(src, r, null, date, amount, { unallocatedMonth: r.month || 'غير محدد' });
+        }
+        else distributeGeneral(src, r, date, amount);
       });
     });
 

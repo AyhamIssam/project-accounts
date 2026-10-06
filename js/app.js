@@ -72,7 +72,7 @@
   const scopeField = {
     key: 'scopeType', label: 'الدفعة لـ', type: 'seg', def: SCOPE.GENERAL,
     options: [{ v: SCOPE.GENERAL, t: 'عام' }, { v: SCOPE.SITES, t: 'موقع أو أكثر' }, { v: SCOPE.MONTH, t: 'شهر كامل' }],
-    hint: v => v.scopeType === SCOPE.SITES ? 'إذا اخترت أكثر من موقع يُقسم المبلغ بينهم بالتساوي.' : ''
+    hint: v => v.scopeType === SCOPE.SITES ? 'إذا اخترت أكثر من موقع يُقسم المبلغ بينهم بالتساوي.' : v.scopeType === SCOPE.MONTH ? 'يتوزع بالتساوي على المواقع التابعة للشهر المختار. حدّد شهر كل موقع من المواقع والقوائم.' : 'يتوزع بالتساوي على جميع المواقع المسجّلة.'
   };
   const scopeExtra = [
     { key: 'sites', label: 'المواقع', type: 'sites', showIf: v => v.scopeType === SCOPE.SITES, required: true },
@@ -169,13 +169,13 @@
           options: [{ v: KIND.DAY, t: 'حساب على اليوم' }, { v: KIND.SITE, t: 'حساب على الموقع' }, { v: KIND.MATERIAL, t: 'مواد دفعها الشخص' }, { v: KIND.PRESENT, t: 'تسجيل حضور فقط' }, { v: KIND.PAYMENT, t: 'سلفة / دفعة' }],
           hint: v => v.kind === KIND.SITE
             ? 'المبلغ يتوزع بالتساوي على أيام الحضور المسجّلة لنفس الشخص في هذه المواقع. سجّل أيام الحضور من "تسجيل حضور فقط".'
-            : v.kind === KIND.MATERIAL ? 'قيمة مواد اشتراها الشخص من ماله. تُسجّل كمصروف على الموقع وتُضاف إلى المبلغ المستحق له.'
+            : v.kind === KIND.MATERIAL ? 'قيمة مواد اشتراها الشخص من ماله وتُضاف إلى مستحقاته. اختر المواقع أو اتركها فارغة لتسجيل المواد عام.'
             : v.kind === KIND.PRESENT ? 'حضور بدون مبلغ. يُستخدم لتوزيع "الحساب على الموقع" على الأيام.'
             : v.kind === KIND.PAYMENT ? 'المبلغ الذي استلمه الشخص. يُخصم من رصيده ولا يُضاف مرة ثانية إلى تكلفة الموقع.'
             : 'إذا اشتغل بأكثر من موقع في اليوم يُقسم المبلغ بين المواقع بالتساوي.'
         },
         { key: 'date', label: v => v.kind === KIND.PAYMENT ? 'تاريخ الدفعة' : v.kind === KIND.MATERIAL ? 'تاريخ شراء المواد' : v.kind === KIND.SITE ? 'تاريخ التسجيل' : 'اليوم', type: 'date', required: true, def: todayISO },
-        { key: 'sites', label: v => v.kind === KIND.SITE ? 'رقم الموقع أو المواقع' : v.kind === KIND.MATERIAL ? 'الموقع الذي اشتريت له المواد' : 'الموقع أو المواقع', type: 'sites', required: true, showIf: v => v.kind !== KIND.PAYMENT },
+        { key: 'sites', label: v => v.kind === KIND.SITE ? 'رقم الموقع أو المواقع' : v.kind === KIND.MATERIAL ? 'مواقع المواد (اختياري — فارغ = عام)' : 'الموقع أو المواقع', type: 'sites', required: v => v.kind !== KIND.MATERIAL, showIf: v => v.kind !== KIND.PAYMENT },
         { key: 'amount', label: v => (v.kind === KIND.MATERIAL ? 'قيمة المواد (' : 'المبلغ (') + CUR + ')', type: 'money', required: true, showIf: v => v.kind !== KIND.PRESENT },
         { key: 'notes', label: 'ملاحظات', type: 'textarea' }
       ],
@@ -183,7 +183,7 @@
         { label: 'التاريخ', r: r => dateEl(r.date) },
         { label: 'الاسم', r: r => h('span', null, r.person, ' ', h('span', { class: 'chip gray' }, r.role)) },
         { label: 'النوع', r: (r, x) => [h('span', { class: 'chip ' + (r.kind === KIND.PAYMENT ? 'warn' : 'gray') }, r.kind === KIND.PAYMENT ? 'سلفة / دفعة' : r.kind === KIND.MATERIAL ? 'مواد دفعها الشخص' : r.kind), x.warn.has(r.id) ? h('span', { class: 'chip warn', title: 'لا توجد أيام حضور مسجّلة لهذا الشخص في هذا الموقع' }, 'بدون أيام حضور') : null] },
-        { label: 'المواقع', r: r => chipsFor(r.sites) },
+        { label: 'المواقع', r: r => r.kind === KIND.MATERIAL && !ids(r.sites).length ? h('span', { class: 'chip gray' }, 'عام') : chipsFor(r.sites) },
         { label: 'المبلغ', n: true, r: r => r.kind === KIND.PRESENT ? '—' : r.kind === KIND.PAYMENT ? h('span', { class: 'num neg' }, '-' + fmt(r.amount)) : money(r.amount) },
         { label: 'ملاحظات', r: r => r.notes || '' }
       ]
@@ -275,6 +275,9 @@
     Object.values(by).forEach(c => Object.keys(tot).forEach(k => { tot[k] += c[k]; }));
 
     const root = h('div');
+    const missingMonths = Array.from(new Set(L.filter(l => l.unallocatedMonth).map(l => l.unallocatedMonth)));
+    if (missingMonths.length) root.append(h('div', { class: 'banner info' }, 'دفعات شهرية غير موزّعة: لا توجد مواقع تابعة لـ ' + missingMonths.map(monthLabel).join('، ') + '. ',
+      h('button', { class: 'btn link', type: 'button', onclick: openSettings }, 'حدّد أشهر المواقع')));
     if (Api.isDemo) root.append(h('div', { class: 'banner' }, 'الوضع التجريبي: البيانات المعروضة أمثلة محفوظة في هذا المتصفح فقط. لربط الموقع بالشيت ضع رابط Apps Script في js/config.js (الخطوات في README).'));
     if (warn.size) root.append(h('div', { class: 'banner info' }, warn.size + ' سجل "حساب على الموقع" ما إله أيام حضور مسجّلة، لذلك وُزّع مؤقتاً على الموقع مباشرة. ',
       h('button', { class: 'btn link', type: 'button', onclick: () => { ui.tab = 'staff'; render(); } }, 'افتح قسم الفنيين')));
@@ -295,7 +298,7 @@
           SRC.map(([k, t]) => h('td', { class: 'n', 'data-label': t }, c[k] ? money(c[k]) : '—')),
           h('td', { class: 'n total', 'data-label': 'الإجمالي' }, money(c.total)))),
         g ? h('tr', null,
-          h('td', { 'data-label': 'الموقع' }, h('span', { class: 'chip gray' }, 'عام / شهري')),
+          h('td', { 'data-label': 'الموقع' }, h('span', { class: 'chip gray' }, 'غير موزّع')),
           SRC.map(([k, t]) => h('td', { class: 'n', 'data-label': t }, g[k] ? money(g[k]) : '—')),
           h('td', { class: 'n total', 'data-label': 'الإجمالي' }, money(g.total))) : null),
       h('tfoot', null, h('tr', null,
@@ -303,7 +306,7 @@
         SRC.map(([k, t]) => h('td', { class: 'n', 'data-label': t }, money(tot[k]))),
         h('td', { class: 'n', 'data-label': 'الإجمالي' }, money(tot.total)))))));
     if (!rows.length && !g) root.append(h('div', { class: 'empty' }, 'لا توجد بيانات بعد.'));
-    root.append(h('p', { class: 'note' }, '"عام / شهري" هي البنود غير المرتبطة بموقع معيّن (عام أو لشهر كامل). المقاول محسوب بعد الخصومات.'));
+    root.append(h('p', { class: 'note' }, 'العام يتوزع بالتساوي على جميع المواقع، والشهري على المواقع التابعة للشهر المختار في المواقع والقوائم. المبالغ التي لا توجد لها مواقع تبقى في صف "غير موزّع". المقاول محسوب بعد الخصومات والدفعات والسلف.'));
     return root;
   }
 
@@ -577,6 +580,27 @@
             h('button', { class: 'btn small danger', type: 'button', onclick: () => delFn(it) }, 'حذف'))) : h('div', { class: 'note' }, 'لا يوجد شيء بعد'),
           h('div', { class: 'addrow' }, input, h('button', { class: 'btn', type: 'button', onclick: add }, 'إضافة'))));
     }
+    function siteMonths() {
+      return h('div', { class: 'field' }, h('label', null, 'شهر الحساب لكل موقع'),
+        h('p', { class: 'note' }, 'اختر الشهر الذي يتبع له كل موقع لتوزيع دفعات "شهر كامل". المواقع بدون شهر تستفيد من العام فقط.'),
+        state.sites.length ? h('div', { class: 'tbl-wrap' }, h('table', { class: 'tbl cards' },
+          h('thead', null, h('tr', null, h('th', null, 'الموقع'), h('th', null, 'شهر الحساب'), h('th', null, ''))),
+          h('tbody', null, sortSites(state.sites.map(s => s.id)).map(id => {
+            const site = state.sites.find(s => s.id === id);
+            const input = h('input', { type: 'month', value: site.month || '', 'aria-label': 'شهر الموقع ' + id });
+            const save = h('button', { class: 'btn small', type: 'button', onclick: async () => {
+              if (input.value && !/^\d{4}-(0[1-9]|1[0-2])$/.test(input.value)) return toast('اختر شهرًا صحيحًا', true);
+              save.disabled = true;
+              try {
+                const updated = await Api.update('sites', Object.assign({}, site, { month: input.value }));
+                Object.assign(site, updated); render(); toast('تم حفظ شهر الموقع');
+              } catch (e) { toast(e.message, true); }
+              finally { save.disabled = false; }
+            } }, 'حفظ');
+            return h('tr', null, h('td', { 'data-label': 'الموقع' }, chip(id)),
+              h('td', { 'data-label': 'شهر الحساب' }, input), h('td', { class: 'act' }, save));
+          })))) : h('p', { class: 'note' }, 'أضف المواقع أولًا.'));
+    }
     function draw() {
       openDialog([
         h('h3', null, 'المواقع والقوائم'),
@@ -591,6 +615,7 @@
             if (!confirm('حذف الموقع "' + it.id + '" من القائمة؟ السجلات القديمة تبقى كما هي.')) return;
             try { await Api.remove('sites', it.id); state.sites = state.sites.filter(s => s.id !== it.id); draw(); render(); } catch (e) { toast(e.message, true); }
           }, 'رقم موقع جديد (3 أو 4 أرقام)', { inputmode: 'numeric', maxlength: '4' }),
+        siteMonths(),
         listBlock('بنود الدفعات العشوائية', state.lists.filter(l => l.list === LIST_CATEGORY).map(l => ({ id: l.id, label: l.value })),
           async v => {
             if (categories().indexOf(v) !== -1) return toast('البند موجود مسبقاً', true);

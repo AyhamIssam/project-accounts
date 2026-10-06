@@ -70,8 +70,8 @@ const SCHEMA = {
   // المواقع: عمود id هنا هو اسم/رقم الموقع نفسه (يظهر للمستخدم).
   sites: {
     name: 'Sites',
-    cols: [['id', 'Site Number'], ['notes', 'Notes']],
-    text: ['id', 'notes']
+    cols: [['id', 'Site Number'], ['notes', 'Notes'], ['month', 'Account Month']],
+    text: ['id', 'notes', 'month']
   },
   // قوائم الاختيار (مثلاً بنود الدفعات العشوائية). list = اسم القائمة، value = القيمة.
   lists: {
@@ -246,6 +246,7 @@ function add_(key, rec) {
   const def = SCHEMA[key];
   const sh = sheetFor_(key);
   rec = rec || {};
+  validateSiteMonth_(key, rec);
   // رقم الموقع: 3 أو 4 أرقام فقط
   if (key === 'sites' && !/^\d{3,4}$/.test(String(rec.id || ''))) throw new Error('رقم الموقع لازم يكون 3 أو 4 أرقام');
   rec.id = rec.id ? String(rec.id) : Utilities.getUuid().slice(0, 8);
@@ -256,6 +257,7 @@ function add_(key, rec) {
 }
 
 function update_(key, rec) {
+  validateSiteMonth_(key, rec || {});
   const def = SCHEMA[key];
   const sh = sheetFor_(key);
   const r = findRow_(sh, rec && rec.id);
@@ -264,6 +266,12 @@ function update_(key, rec) {
   const merged = Object.assign({}, existing, rec, { id: existing.id, created: existing.created });
   writeRow_(sh.getRange(r, 1, 1, def.cols.length), def, merged);
   return merged;
+}
+
+function validateSiteMonth_(key, rec) {
+  if (key === 'sites' && rec.month && !/^\d{4}-(0[1-9]|1[0-2])$/.test(String(rec.month))) {
+    throw new Error('شهر الحساب لازم يكون بصيغة YYYY-MM');
+  }
 }
 
 function remove_(key, id) {

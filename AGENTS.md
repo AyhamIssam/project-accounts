@@ -23,7 +23,7 @@ Arabic (RTL) static site for construction-project accounting. Data lives in Goog
 - `staff`: id, person, role, kind (`يومي`/`على الموقع`/`حضور`/`دفعة`/`مواد` in the UI; `Daily`/`By Site`/`Attendance`/`Payment`/`Materials Paid` in Sheets), date, sites (comma list), amount, notes, created. Materials paid by a person are allocated directly across the selected sites and increase that person's entitlement.
 - `car`: id, date, amount, scopeType (`عام`/`مواقع`/`شهر` in the UI; `General`/`Sites`/`Month` in Sheets), sites, month (`YYYY-MM`), person (optional link to a staff name), notes, created
 - `misc`: same as car plus `category`
-- `sites`: `id` **is the site number itself**, must match `^\d{3,4}$` (validated in `app.js` and `Code.gs`; renaming is not supported; delete + add)
+- `sites`: id, notes, month (`YYYY-MM`, optional account month; appended as Account Month). `id` **is the site number itself**, must match `^\d{3,4}$` (validated in `app.js` and `Code.gs`; renaming is not supported; delete + add). Month is edited in Settings, not SECTIONS. Monthly car/misc allocations split equally across sites assigned to that month; absent matches stay unallocated. General amounts split equally across all registered sites.
 - `lists`: id, list (`بند`/`سيارة` in the UI, `Category`/`Car` in Sheets), value
 
 Multi-site values are stored as one comma-separated string of site ids.
@@ -39,4 +39,4 @@ Multi-site values are stored as one comma-separated string of site ids.
 
 ## Quick test
 
-Open `index.html` with empty `API_URL`: demo data loads; summary total should be `2,900.00` with site 101 = 1,937.50, site 152 = 970.00, site 2103 = 22.50, general = -30.00 (contractor 2,750 minus a 120 general deduction; plus 60 car and 30 misc).
+Open `index.html` with empty `API_URL` and fresh demo storage: summary total should be `2,900.00` with site 101 = 1,932.50, site 152 = 965.00, site 2103 = 2.50, unallocated = 0. General contractor deduction 120 and car 60 split across all three sites; monthly misc 30 splits across 101 and 152 assigned to the current month. Existing demo storage may have no site months; assign them in Settings or reset demo data.

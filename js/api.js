@@ -50,7 +50,7 @@ window.Api = (function () {
     return {
       company: [],
       worklog: [],
-      sites: [{ id: '101', notes: '' }, { id: '152', notes: '' }, { id: '2103', notes: '' }],
+      sites: [{ id: '101', notes: '', month: ym }, { id: '152', notes: '', month: ym }, { id: '2103', notes: '', month: '' }],
       lists: [LIST_CATEGORY_ROW('محروقات'), LIST_CATEGORY_ROW('أدوات'), LIST_CATEGORY_ROW('نقل'), LIST_CATEGORY_ROW('ضيافة')],
       contractor: [
         { id: id(), date: iso(-9), kind: CKIND.ACCOUNT, site: '101', amount: 1800, label: '', notes: 'شامل الإضافة على الدرج', created: nowISO() },
