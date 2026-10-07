@@ -1,10 +1,10 @@
 // منطق توزيع المبالغ على المواقع. دوال صافية بدون واجهة، سهلة الاختبار.
-// المدخل: state = {contractor, staff, car, misc, sites, lists}
+// المدخل: state = {company, contractor, staff, car, misc, sites, lists}
 // المخرج: {lines, warn}
 //   lines: أسطر موزّعة {src, id, site|null, date, amount, person?}
 //   warn:  Set من معرّفات سجلات "حساب على الموقع" التي لا يوجد لها أيام حضور
 (function () {
-  const { KIND, SCOPE, CKIND } = window.SCHEMA;
+  const { KIND, SCOPE, CKIND, COMPANY_KIND } = window.SCHEMA;
 
   const round3 = n => Math.round(n * 1000) / 1000;
 
@@ -29,6 +29,17 @@
       if (!allSites.length) return push(src, rec, null, date, amount, extra);
       split(amount, allSites.length).forEach((a, i) => push(src, rec, allSites[i], date, a, extra));
     };
+    const distributeMonth = (src, rec, month, date, amount) => {
+      const sites = Array.from(new Set(st.sites.filter(s => month && s.month === month).map(s => String(s.id))));
+      if (sites.length) split(amount, sites.length).forEach((a, i) => push(src, rec, sites[i], date, a));
+      else push(src, rec, null, date, amount, { unallocatedMonth: month || 'غير محدد' });
+    };
+
+    // خصومات الشركة تكلفة موجبة للمواقع التابعة لشهر تاريخ الخصم.
+    // المستحقات والدفعات المستلمة تبقى ضمن رصيد الشركة فقط.
+    (st.company || []).filter(r => r.kind === COMPANY_KIND.DEDUCT).forEach(r => {
+      distributeMonth('company', r, String(r.date || '').slice(0, 7), r.date, Number(r.amount) || 0);
+    });
 
     // 1) المقاول: الحساب موجب، والخصم والدفعة والسلفة تُطرح من رصيده.
     st.contractor.forEach(r => {
@@ -90,9 +101,7 @@
         }
         const date = r.scopeType === SCOPE.MONTH && r.month ? r.month + '-01' : r.date;
         if (r.scopeType === SCOPE.MONTH) {
-          const sites = Array.from(new Set(st.sites.filter(s => r.month && s.month === r.month).map(s => String(s.id))));
-          if (sites.length) split(amount, sites.length).forEach((a, i) => push(src, r, sites[i], date, a));
-          else push(src, r, null, date, amount, { unallocatedMonth: r.month || 'غير محدد' });
+          distributeMonth(src, r, r.month, date, amount);
         }
         else distributeGeneral(src, r, date, amount);
       });

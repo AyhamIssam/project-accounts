@@ -118,11 +118,11 @@
           key: 'kind', label: 'نوع الحركة', type: 'seg', def: COMPANY_KIND.DUE,
           options: [{ v: COMPANY_KIND.DUE, t: 'مستحق لي' }, { v: COMPANY_KIND.DEDUCT, t: 'خصم عليّ' }, { v: COMPANY_KIND.RECEIVED, t: 'دفعة استلمتها' }],
           hint: v => v.kind === COMPANY_KIND.DUE ? 'قيمة الأعمال التي أصبحت مستحقة لك على الشركة.'
-            : v.kind === COMPANY_KIND.DEDUCT ? 'مثل الضمان الاجتماعي؛ يُطرح من المبلغ المستحق لك.'
+            : v.kind === COMPANY_KIND.DEDUCT ? 'مثل الضمان الاجتماعي؛ يُطرح من رصيد الشركة وتُضاف تكلفته بالتساوي إلى المواقع التابعة لشهر تاريخ الخصم.'
             : 'المبلغ الذي دفعته لك الشركة فعلياً؛ يُطرح من الرصيد المتبقي.'
         },
         { key: 'date', label: v => v.kind === COMPANY_KIND.RECEIVED ? 'تاريخ الاستلام' : 'التاريخ', type: 'date', required: true, def: todayISO },
-        { key: 'site', label: 'الموقع (اختياري)', type: 'site', placeholder: () => 'عام / بدون موقع' },
+        { key: 'site', label: 'الموقع (اختياري)', type: 'site', placeholder: () => 'عام / بدون موقع', showIf: v => v.kind !== COMPANY_KIND.DEDUCT },
         { key: 'amount', label: 'المبلغ (' + CUR + ')', type: 'money', required: true },
         { key: 'label', label: 'بند الخصم', type: 'text', required: true, list: companyDeductLabels, showIf: v => v.kind === COMPANY_KIND.DEDUCT },
         { key: 'notes', label: 'ملاحظات', type: 'textarea' }
@@ -130,7 +130,7 @@
       cols: [
         { label: 'التاريخ', r: r => dateEl(r.date) },
         { label: 'النوع', r: r => h('span', { class: 'chip ' + (r.kind === COMPANY_KIND.DUE ? 'gray' : 'warn') }, r.kind === COMPANY_KIND.DUE ? 'مستحق لي' : r.kind === COMPANY_KIND.DEDUCT ? 'خصم عليّ' : 'دفعة مستلمة') },
-        { label: 'الموقع', r: r => r.site ? chip(r.site) : h('span', { class: 'chip gray' }, 'عام') },
+        { label: 'الموقع / شهر التوزيع', r: r => r.kind === COMPANY_KIND.DEDUCT ? h('span', { class: 'chip gray' }, monthLabel(String(r.date || '').slice(0, 7))) : r.site ? chip(r.site) : h('span', { class: 'chip gray' }, 'عام') },
         { label: 'المبلغ', n: true, r: r => r.kind === COMPANY_KIND.DUE ? money(r.amount) : h('span', { class: 'num neg' }, '-' + fmt(r.amount)) },
         { label: 'البند / الملاحظات', r: r => [r.label || '', r.label && r.notes ? ' — ' : '', r.notes || ''] }
       ]
@@ -266,17 +266,17 @@
     const f = filtersFor('summary');
     const { lines, warn } = Calc.allocate(state);
     const L = lines.filter(l => !f.month || l.date.slice(0, 7) === f.month);
-    const SRC = [['contractor', 'المقاول'], ['staff', 'المهندس والفنيين'], ['car', 'السيارة'], ['misc', 'دفعات عشوائية']];
+    const SRC = [['contractor', 'المقاول'], ['staff', 'المهندس والفنيين'], ['car', 'السيارة'], ['misc', 'دفعات عشوائية'], ['company', 'خصومات الشركة']];
     const by = {};
-    const cell = k => (by[k] = by[k] || { contractor: 0, staff: 0, car: 0, misc: 0, total: 0 });
+    const cell = k => (by[k] = by[k] || { contractor: 0, staff: 0, car: 0, misc: 0, company: 0, total: 0 });
     L.forEach(l => { const c = cell(l.site || ''); c[l.src] += l.amount; c.total += l.amount; });
     const siteIds = sortSites(Array.from(new Set(state.sites.map(s => s.id).concat(Object.keys(by).filter(Boolean)))));
-    const tot = { contractor: 0, staff: 0, car: 0, misc: 0, total: 0 };
+    const tot = { contractor: 0, staff: 0, car: 0, misc: 0, company: 0, total: 0 };
     Object.values(by).forEach(c => Object.keys(tot).forEach(k => { tot[k] += c[k]; }));
 
     const root = h('div');
     const missingMonths = Array.from(new Set(L.filter(l => l.unallocatedMonth).map(l => l.unallocatedMonth)));
-    if (missingMonths.length) root.append(h('div', { class: 'banner info' }, 'دفعات شهرية غير موزّعة: لا توجد مواقع تابعة لـ ' + missingMonths.map(monthLabel).join('، ') + '. ',
+    if (missingMonths.length) root.append(h('div', { class: 'banner info' }, 'مبالغ شهرية غير موزّعة: لا توجد مواقع تابعة لـ ' + missingMonths.map(monthLabel).join('، ') + '. ',
       h('button', { class: 'btn link', type: 'button', onclick: openSettings }, 'حدّد أشهر المواقع')));
     if (Api.isDemo) root.append(h('div', { class: 'banner' }, 'الوضع التجريبي: البيانات المعروضة أمثلة محفوظة في هذا المتصفح فقط. لربط الموقع بالشيت ضع رابط Apps Script في js/config.js (الخطوات في README).'));
     if (warn.size) root.append(h('div', { class: 'banner info' }, warn.size + ' سجل "حساب على الموقع" ما إله أيام حضور مسجّلة، لذلك وُزّع مؤقتاً على الموقع مباشرة. ',
