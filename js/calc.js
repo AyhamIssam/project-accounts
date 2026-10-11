@@ -110,5 +110,36 @@
     return { lines, warn };
   }
 
-  window.Calc = { allocate, split, ids, round3 };
+  // حركة النقد والمبالغ المستحقة حتى تاريخ محدد، مستقلة عن توزيع تكلفة المواقع.
+  function cashSummary(st, asOf) {
+    const throughToday = r => !r.date || r.date <= asOf;
+    const amount = r => Number(r.amount) || 0;
+    let paid = 0, contractorDue = 0;
+    const people = new Map();
+    const person = name => {
+      if (!people.has(name)) people.set(name, { earned: 0, paid: 0 });
+      return people.get(name);
+    };
+    st.contractor.filter(throughToday).forEach(r => {
+      const a = amount(r);
+      contractorDue += r.kind === CKIND.ACCOUNT ? a : -a;
+      if (r.kind === CKIND.PAYMENT || r.kind === CKIND.ADVANCE) paid += a;
+    });
+    st.staff.filter(throughToday).forEach(r => {
+      const p = person(r.person), a = amount(r);
+      if (r.kind === KIND.PAYMENT) { p.paid += a; paid += a; }
+      else if (r.kind === KIND.DAY || r.kind === KIND.SITE || r.kind === KIND.MATERIAL) p.earned += a;
+    });
+    st.car.filter(throughToday).forEach(r => {
+      if (r.person) person(r.person).earned += amount(r);
+      else paid += amount(r);
+    });
+    st.misc.filter(throughToday).forEach(r => { paid += amount(r); });
+    // الزيادة المدفوعة لشخص لا تسدد مستحقات شخص آخر.
+    const remaining = Math.max(0, round3(contractorDue)) + Array.from(people.values())
+      .reduce((sum, p) => sum + Math.max(0, round3(p.earned - p.paid)), 0);
+    return { paid: round3(paid), remaining: round3(remaining) };
+  }
+
+  window.Calc = { allocate, cashSummary, split, ids, round3 };
 })();

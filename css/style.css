@@ -208,4 +208,9 @@ dialog::backdrop { background: rgba(8, 18, 20, .55); }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 
 .neg { color: var(--bad); }
+.cash-summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 12px; padding: 10px 12px; margin-bottom: 14px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+.cash-period { grid-column: 1 / -1; color: var(--muted); font-size: 11px; }
+.cash-summary > div { min-width: 0; display: grid; gap: 3px; }
+.cash-summary span { color: var(--muted); font-size: 12px; }
+.cash-summary b { font-size: 17px; text-align: start; overflow-wrap: anywhere; }
 .kpi b.neg { color: var(--bad); }

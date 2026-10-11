@@ -283,6 +283,13 @@
       h('button', { class: 'btn link', type: 'button', onclick: () => { ui.tab = 'staff'; render(); } }, 'افتح قسم الفنيين')));
 
     root.append(h('div', { class: 'toolbar' }, monthFilter(f)));
+    const cash = Calc.cashSummary(state, todayISO());
+    root.append(h('div', { class: 'cash-summary', 'aria-label': 'المدفوع والمتبقي حتى اليوم' },
+      h('small', { class: 'cash-period' }, 'حتى اليوم · كل الأشهر'),
+      h('div', { title: 'دفعات وسلف المقاول، دفعات الأشخاص، المصاريف العشوائية والسيارة غير المرتبطة بشخص.' },
+        h('span', null, 'المدفوع فعليًا'), h('b', { class: 'num' }, fmt(cash.paid) + ' ' + CUR)),
+      h('div', { title: 'المتبقي للمقاول والأشخاص، شامل مواد الشخص والسيارة المرتبطة به. خصومات الشركة محسومة من رصيدها ولا تحتاج دفعًا إضافيًا.' },
+        h('span', null, 'المتبقي للدفع'), h('b', { class: 'num' }, fmt(cash.remaining) + ' ' + CUR))));
     root.append(h('div', { class: 'kpis' },
       h('div', { class: 'kpi main' }, h('span', null, 'إجمالي المصروف'), h('b', null, fmt(tot.total)), h('span', null, CUR)),
       SRC.map(([k, t]) => h('div', { class: 'kpi' }, h('span', null, t), h('b', null, fmt(tot[k]))))));
