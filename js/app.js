@@ -550,6 +550,7 @@
         busy = false; error = e.message; draw();
       }
     }
+
     function draw() {
       const keep = document.activeElement && document.activeElement.id;
       openDialog([
@@ -588,26 +589,33 @@
           h('div', { class: 'addrow' }, input, h('button', { class: 'btn', type: 'button', onclick: add }, 'إضافة'))));
     }
     function siteMonths() {
-      return h('div', { class: 'field' }, h('label', null, 'شهر الحساب لكل موقع'),
-        h('p', { class: 'note' }, 'اختر الشهر الذي يتبع له كل موقع لتوزيع دفعات "شهر كامل". المواقع بدون شهر تستفيد من العام فقط.'),
+      return h('div', { class: 'field' }, h('label', null, 'إعدادات كل موقع'),
+        h('p', { class: 'note' }, 'اختر شهر الحساب ونوع الموقع (Thinlayer أو Swap) وعدد السكاتر. دفعات "شهر كامل" تتوزع على المواقع التابعة للشهر المختار.'),
         state.sites.length ? h('div', { class: 'tbl-wrap' }, h('table', { class: 'tbl cards' },
-          h('thead', null, h('tr', null, h('th', null, 'الموقع'), h('th', null, 'شهر الحساب'), h('th', null, ''))),
+          h('thead', null, h('tr', null, h('th', null, 'الموقع'), h('th', null, 'شهر الحساب'), h('th', null, 'النوع'), h('th', null, 'عدد السكاتر'), h('th', null, ''))),
           h('tbody', null, sortSites(state.sites.map(s => s.id)).map(id => {
             const site = state.sites.find(s => s.id === id);
-            const input = h('input', { type: 'month', value: site.month || '', 'aria-label': 'شهر الموقع ' + id });
+            const monthInput = h('input', { type: 'month', value: site.month || '', 'aria-label': 'شهر الموقع ' + id });
+            const typeInput = h('select', { value: site.type || '', 'aria-label': 'نوع الموقع ' + id },
+              h('option', { value: '' }, 'اختر النوع'), h('option', { value: 'Thinlayer' }, 'Thinlayer'), h('option', { value: 'Swap' }, 'Swap'));
+            const scatterInput = h('select', { value: String(site.scatters || 3), 'aria-label': 'عدد السكاتر للموقع ' + id },
+              [3, 4, 5].map(n => h('option', { value: String(n) }, n)));
             const save = h('button', { class: 'btn small', type: 'button', onclick: async () => {
-              if (input.value && !/^\d{4}-(0[1-9]|1[0-2])$/.test(input.value)) return toast('اختر شهرًا صحيحًا', true);
+              if (monthInput.value && !/^\d{4}-(0[1-9]|1[0-2])$/.test(monthInput.value)) return toast('اختر شهرًا صحيحًا', true);
+              if (!typeInput.value) return toast('اختر نوع الموقع', true);
               save.disabled = true;
               try {
-                const updated = await Api.update('sites', Object.assign({}, site, { month: input.value }));
-                Object.assign(site, updated); render(); toast('تم حفظ شهر الموقع');
+                const updated = await Api.update('sites', Object.assign({}, site, { month: monthInput.value, type: typeInput.value, scatters: Number(scatterInput.value) }));
+                Object.assign(site, updated); render(); toast('تم حفظ إعدادات الموقع');
               } catch (e) { toast(e.message, true); }
               finally { save.disabled = false; }
             } }, 'حفظ');
             return h('tr', null, h('td', { 'data-label': 'الموقع' }, chip(id)),
-              h('td', { 'data-label': 'شهر الحساب' }, input), h('td', { class: 'act' }, save));
+              h('td', { 'data-label': 'شهر الحساب' }, monthInput), h('td', { 'data-label': 'النوع' }, typeInput),
+              h('td', { 'data-label': 'عدد السكاتر' }, scatterInput), h('td', { class: 'act' }, save));
           })))) : h('p', { class: 'note' }, 'أضف المواقع أولًا.'));
     }
+
     function draw() {
       openDialog([
         h('h3', null, 'المواقع والقوائم'),
@@ -616,7 +624,7 @@
             v = normSite(v);
             if (!validSite(v)) return toast(SITE_ERR, true);
             if (siteExists(v)) return toast('الموقع موجود مسبقاً', true);
-            try { state.sites.push(await Api.add('sites', { id: v, notes: '' })); draw(); render(); } catch (e) { toast(e.message, true); }
+            try { state.sites.push(await Api.add('sites', { id: v, notes: '', month: '', type: '', scatters: 3 })); draw(); render(); } catch (e) { toast(e.message, true); }
           },
           async it => {
             if (!confirm('حذف الموقع "' + it.id + '" من القائمة؟ السجلات القديمة تبقى كما هي.')) return;
@@ -691,3 +699,4 @@
   $('#title').textContent = CFG.TITLE || 'حسابات المواقع';
   load();
 })();
+
