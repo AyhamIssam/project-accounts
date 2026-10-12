@@ -318,10 +318,11 @@
     const rateRows = sortSites(state.sites.map(s => s.id)).map(id => {
       const site = state.sites.find(s => s.id === id);
       const isThinlayer = site.type === 'Thinlayer';
-      const base = isThinlayer ? (Number(site.scatters) <= 3 ? 571.04 : 717.12) : null;
+      const scatters = Number(site.scatters) || 3;
+      const base = isThinlayer ? (scatters <= 3 ? 571.04 : 717.12) : null;
       const transport = site.location === 'outside' ? 83 : site.location === 'inside' ? 0 : null;
       const known = (base || 0) + (transport || 0);
-      return { site, base, transport, known, complete: base !== null && transport !== null };
+      return { site, scatters, base, transport, known, complete: base !== null && transport !== null };
     });
     const thinlayerTotal = rateRows.reduce((sum, r) => sum + (r.base || 0), 0);
     const transportTotal = rateRows.reduce((sum, r) => sum + (r.transport || 0), 0);
@@ -335,8 +336,8 @@
         h('div', { class: 'rate-known-total' }, h('span', null, 'مجموع الأسعار المحددة'), h('b', { class: 'num' }, fmt(knownTotal) + ' ' + CUR))),
       h('div', { class: 'tbl-wrap' }, h('table', { class: 'tbl cards site-rates-table' },
         h('thead', null, h('tr', null, h('th', null, 'الموقع'), h('th', null, 'النوع والسكاتر'), h('th', { class: 'n' }, 'سعر Thinlayer'), h('th', { class: 'n' }, 'نقل خارج عمان'), h('th', { class: 'n' }, 'المبلغ المحدد'))),
-        h('tbody', null, rateRows.map(({ site, base, transport, known, complete }) => {
-          const typeLabel = site.type ? site.type + (site.type === 'Thinlayer' ? ' · ' + (site.scatters || 3) + ' سكاتر' : '') : 'حدد النوع';
+        h('tbody', null, rateRows.map(({ site, scatters, base, transport, known, complete }) => {
+          const typeLabel = site.type ? site.type + (site.type === 'Thinlayer' ? ' · ' + scatters + ' سكاتر' : '') : 'حدد النوع';
           const baseLabel = base !== null ? money(base) : site.type === 'Swap' ? 'السعر غير محدد' : '—';
           const transportLabel = transport !== null ? money(transport) : 'حدد جوا/برا عمان';
           return h('tr', null,
