@@ -119,8 +119,10 @@ h2:first-child { margin-top: 0; }
 
 /* نموذج */
 dialog { border: 1px solid var(--line); border-radius: 14px; padding: 0; width: min(560px, calc(100vw - 24px)); background: var(--surface); color: var(--ink); max-height: calc(100dvh - 24px); }
+dialog.settings-dialog { width: min(1080px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); }
 dialog::backdrop { background: rgba(8, 18, 20, .55); }
 .dlg-in { padding: 18px 18px 14px; display: flex; flex-direction: column; gap: 14px; }
+dialog.settings-dialog .dlg-in { max-height: calc(100dvh - 32px); overflow-y: auto; overscroll-behavior: contain; }
 .dlg-in h3 { margin: 0; font-size: 17px; }
 .field { display: flex; flex-direction: column; gap: 4px; }
 .field > label { font-size: 13px; color: var(--muted); font-weight: 600; }
@@ -140,6 +142,11 @@ dialog::backdrop { background: rgba(8, 18, 20, .55); }
 .list-edit .li { display: flex; align-items: center; gap: 8px; padding: 4px 0; border-bottom: 1px solid var(--line); }
 .list-edit .li span { flex: 1; }
 .addrow { display: flex; gap: 8px; }
+.site-list-block .list-edit { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 0 12px; }
+.site-list-block .list-edit .li { min-width: 0; }
+.site-settings .tbl-wrap { max-height: min(52vh, 480px); overflow: auto; }
+.site-settings .tbl thead { position: sticky; top: 0; z-index: 1; }
+.site-settings .tbl input, .site-settings .tbl select { min-width: 110px; }
 
 #toast {
   position: fixed; inset-inline: 0; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); display: flex; justify-content: center;
@@ -178,7 +185,9 @@ dialog::backdrop { background: rgba(8, 18, 20, .55); }
   .kpi b { font-size: 18px; text-align: start; }
   .kpi.main b { font-size: 25px; }
   dialog { width: 100%; max-width: none; max-height: calc(100dvh - 12px); margin: auto 0 0; border-radius: 16px 16px 0 0; border-bottom: 0; }
+  dialog.settings-dialog { width: 100%; max-height: calc(100dvh - 12px); }
   .dlg-in { max-height: calc(100dvh - 12px); overflow-y: auto; overscroll-behavior: contain; padding: 18px 16px calc(16px + env(safe-area-inset-bottom, 0px)); gap: 12px; }
+  dialog.settings-dialog .dlg-in { max-height: calc(100dvh - 12px); }
   .dlg-in input, .dlg-in select, .dlg-in textarea { min-height: 44px; font-size: 16px; }
   .seg button, .chips button { min-height: 44px; }
   .dlg-foot { position: sticky; bottom: calc(-16px - env(safe-area-inset-bottom, 0px)); z-index: 1; padding: 10px 0 calc(4px + env(safe-area-inset-bottom, 0px)); background: var(--surface); }
@@ -188,6 +197,8 @@ dialog::backdrop { background: rgba(8, 18, 20, .55); }
   .list-edit .addrow .btn { min-height: 44px; }
   .row2 { grid-template-columns: 1fr; }
   .tbl-wrap { overflow: hidden; }
+  .site-settings .tbl-wrap { max-height: none; overflow: visible; }
+  .site-list-block .list-edit { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   table.tbl.cards thead { display: none; }
   table.tbl.cards, table.tbl.cards tbody, table.tbl.cards tr, table.tbl.cards td { display: block; width: 100%; }
   table.tbl.cards tr { border-top: 1px solid var(--line); padding: 10px 0; }
@@ -214,3 +225,4 @@ dialog::backdrop { background: rgba(8, 18, 20, .55); }
 .cash-summary span { color: var(--muted); font-size: 12px; }
 .cash-summary b { font-size: 17px; text-align: start; overflow-wrap: anywhere; }
 .kpi b.neg { color: var(--bad); }
+
