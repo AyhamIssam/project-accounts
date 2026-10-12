@@ -70,8 +70,8 @@ const SCHEMA = {
   // المواقع: عمود id هنا هو اسم/رقم الموقع نفسه (يظهر للمستخدم).
   sites: {
     name: 'Sites',
-    cols: [['id', 'Site Number'], ['notes', 'Notes'], ['month', 'Account Month'], ['type', 'Site Type'], ['scatters', 'Scatter Count']],
-    text: ['id', 'notes', 'month', 'type']
+    cols: [['id', 'Site Number'], ['notes', 'Notes'], ['month', 'Account Month']],
+    text: ['id', 'notes', 'month']
   },
   // قوائم الاختيار (مثلاً بنود الدفعات العشوائية). list = اسم القائمة، value = القيمة.
   lists: {
@@ -269,10 +269,8 @@ function update_(key, rec) {
 }
 
 function validateSiteMonth_(key, rec) {
-  if (key === 'sites') {
-    if (rec.month && !/^\d{4}-(0[1-9]|1[0-2])$/.test(String(rec.month))) throw new Error('شهر الحساب لازم يكون بصيغة YYYY-MM');
-    if (rec.type && ['Thinlayer', 'Swap'].indexOf(String(rec.type)) === -1) throw new Error('نوع الموقع غير صحيح');
-    if (rec.scatters !== '' && rec.scatters !== null && rec.scatters !== undefined && [3, 4, 5].indexOf(Number(rec.scatters)) === -1) throw new Error('عدد السكاتر يجب أن يكون 3 أو 4 أو 5');
+  if (key === 'sites' && rec.month && !/^\d{4}-(0[1-9]|1[0-2])$/.test(String(rec.month))) {
+    throw new Error('شهر الحساب لازم يكون بصيغة YYYY-MM');
   }
 }
 
