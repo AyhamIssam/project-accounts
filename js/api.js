@@ -8,6 +8,28 @@ window.Api = (function () {
   const PASS_KEY = 'pt-password';
   const DEMO_KEY = 'pt-demo-v2';
   const isDemo = !cfg.API_URL;
+  const SITE_META = /(?:\r?\n)?\[\[site-config:v1:(Thinlayer|Swap|):([345])\]\]$/;
+  function decodeSite(rec) {
+    if (!rec) return rec;
+    const out = Object.assign({}, rec);
+    const notes = String(out.notes || '');
+    const match = notes.match(SITE_META);
+    if (match) {
+      out.notes = notes.slice(0, match.index);
+      if (!out.type) out.type = match[1];
+      if (!out.scatters) out.scatters = Number(match[2]);
+    }
+    if (!out.scatters) out.scatters = 3;
+    return out;
+  }
+  function encodeSite(rec) {
+    const out = Object.assign({}, rec);
+    const notes = String(out.notes || '').replace(SITE_META, '');
+    const type = ['Thinlayer', 'Swap'].indexOf(out.type) !== -1 ? out.type : '';
+    const scatters = [3, 4, 5].indexOf(Number(out.scatters)) !== -1 ? Number(out.scatters) : 3;
+    out.notes = notes + (notes ? '\n' : '') + '[[site-config:v1:' + type + ':' + scatters + ']]';
+    return out;
+  }
   if (!isDemo) {
     try { localStorage.removeItem(DEMO_KEY); } catch (e) { /* ignore */ }
   }
@@ -94,6 +116,7 @@ window.Api = (function () {
       if (isDemo) return demoLoad();
       const out = await call('bootstrap');
       SHEETS.forEach(k => { out.data[k] = out.data[k] || []; });
+      out.data.sites = out.data.sites.map(decodeSite);
       return out.data;
     },
     async add(sheet, rec) {
@@ -105,7 +128,8 @@ window.Api = (function () {
         s[sheet].push(r); demoSave(s);
         return r;
       }
-      return (await call('add', { sheet, record: rec })).record;
+      const result = (await call('add', { sheet, record: sheet === 'sites' ? encodeSite(rec) : rec })).record;
+      return sheet === 'sites' ? decodeSite(result) : result;
     },
     async update(sheet, rec) {
       if (isDemo) {
@@ -115,7 +139,8 @@ window.Api = (function () {
         s[sheet][i] = Object.assign({}, s[sheet][i], rec); demoSave(s);
         return s[sheet][i];
       }
-      return (await call('update', { sheet, record: rec })).record;
+      const result = (await call('update', { sheet, record: sheet === 'sites' ? encodeSite(rec) : rec })).record;
+      return sheet === 'sites' ? decodeSite(result) : result;
     },
     async remove(sheet, id) {
       if (isDemo) {
@@ -129,3 +154,4 @@ window.Api = (function () {
     resetDemo() { try { localStorage.removeItem(DEMO_KEY); } catch (e) { /* ignore */ } }
   };
 })();
+
