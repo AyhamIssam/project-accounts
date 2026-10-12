@@ -157,7 +157,7 @@ dialog.settings-dialog .dlg-in { max-height: calc(100dvh - 32px); overflow-y: au
 .loading { padding: 40px; text-align: center; color: var(--muted); }
 
 /* جوال: تحويل الجدول إلى بطاقات */
-@media (max-width: 680px) {
+@media (max-width: 760px) {
   body { font-size: 14px; }
   .top {
     position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto auto;
