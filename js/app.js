@@ -408,7 +408,7 @@
     const d = $('#dlg');
     if (!d.open) d.showModal();
   }
-  function closeDialog() { ui.dialogLocked = false; const d = $('#dlg'); if (d.open) d.close(); }
+  function closeDialog() { ui.dialogLocked = false; const d = $('#dlg'); d.classList.remove('settings-dialog'); if (d.open) d.close(); }
 
   function fieldNode(f, vals, rerender) {
     const id = 'f-' + f.key;
@@ -578,18 +578,19 @@
 
   /* ---------- المواقع والقوائم ---------- */
   function openSettings() {
+    $('#dlg').classList.add('settings-dialog');
     function listBlock(title, items, addFn, delFn, placeholder, extra) {
       const input = h('input', Object.assign({ type: 'text', placeholder, 'aria-label': placeholder }, extra || {}));
       const add = async () => { const v = input.value.trim(); if (!v) return; await addFn(v); };
       input.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); add(); } });
-      return h('div', { class: 'field' }, h('label', null, title),
+      return h('div', { class: 'field' + (title === 'المواقع' ? ' site-list-block' : '') }, h('label', null, title),
         h('div', { class: 'list-edit' },
           items.length ? items.map(it => h('div', { class: 'li' }, h('span', null, it.label),
             h('button', { class: 'btn small danger', type: 'button', onclick: () => delFn(it) }, 'حذف'))) : h('div', { class: 'note' }, 'لا يوجد شيء بعد'),
           h('div', { class: 'addrow' }, input, h('button', { class: 'btn', type: 'button', onclick: add }, 'إضافة'))));
     }
     function siteMonths() {
-      return h('div', { class: 'field' }, h('label', null, 'بيانات وإعدادات كل موقع'),
+      return h('div', { class: 'field site-settings' }, h('label', null, 'إعدادات كل موقع'),
         h('p', { class: 'note' }, 'حدد شهر الحساب، نوع الموقع، مكانه، وعدد السكاتر من 3 إلى 5.'),
         state.sites.length ? h('div', { class: 'tbl-wrap' }, h('table', { class: 'tbl cards' },
           h('thead', null, h('tr', null, h('th', null, 'رقم الموقع'), h('th', null, 'شهر الحساب'), h('th', null, 'النوع'), h('th', null, 'الموقع'), h('th', null, 'عدد السكاتر'), h('th', null, ''))),
