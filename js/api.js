@@ -8,26 +8,33 @@ window.Api = (function () {
   const PASS_KEY = 'pt-password';
   const DEMO_KEY = 'pt-demo-v2';
   const isDemo = !cfg.API_URL;
-  const SITE_META = /(?:\r?\n)?\[\[site-config:v1:(Thinlayer|Swap|):([345])\]\]$/;
+  const SITE_META_V1 = /(?:\r?\n)?\[\[site-config:v1:(Thinlayer|Swap|):([345])\]\]$/;
+  const SITE_META_V2 = /(?:\r?\n)?\[\[site-config:v2:([^\]]+)\]\]$/;
   function decodeSite(rec) {
     if (!rec) return rec;
     const out = Object.assign({}, rec);
     const notes = String(out.notes || '');
-    const match = notes.match(SITE_META);
-    if (match) {
-      out.notes = notes.slice(0, match.index);
-      if (!out.type) out.type = match[1];
-      if (!out.scatters) out.scatters = Number(match[2]);
+    const v2 = notes.match(SITE_META_V2);
+    const v1 = notes.match(SITE_META_V1);
+    if (v2) {
+      try { Object.assign(out, JSON.parse(decodeURIComponent(v2[1]))); } catch (e) { /* ignore malformed legacy metadata */ }
+      out.notes = notes.slice(0, v2.index);
+    } else if (v1) {
+      out.notes = notes.slice(0, v1.index);
+      if (!out.type) out.type = v1[1];
+      if (!out.scatters) out.scatters = Number(v1[2]);
     }
-    if (!out.scatters) out.scatters = 3;
+    if (!out.scatters && out.type !== 'Survey') out.scatters = 3;
     return out;
   }
   function encodeSite(rec) {
     const out = Object.assign({}, rec);
-    const notes = String(out.notes || '').replace(SITE_META, '');
-    const type = ['Thinlayer', 'Swap'].indexOf(out.type) !== -1 ? out.type : '';
-    const scatters = [3, 4, 5].indexOf(Number(out.scatters)) !== -1 ? Number(out.scatters) : 3;
-    out.notes = notes + (notes ? '\n' : '') + '[[site-config:v1:' + type + ':' + scatters + ']]';
+    const notes = String(out.notes || '').replace(SITE_META_V2, '').replace(SITE_META_V1, '');
+    const meta = {};
+    ['name', 'type', 'scatters', 'installAnts', 'fiveG', 'sec', 'location'].forEach(k => {
+      if (out[k] !== undefined && out[k] !== null) meta[k] = out[k];
+    });
+    out.notes = notes + (notes ? '\n' : '') + '[[site-config:v2:' + encodeURIComponent(JSON.stringify(meta)) + ']]';
     return out;
   }
   if (!isDemo) {
