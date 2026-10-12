@@ -31,7 +31,7 @@ window.Api = (function () {
     const out = Object.assign({}, rec);
     const notes = String(out.notes || '').replace(SITE_META_V2, '').replace(SITE_META_V1, '');
     const meta = {};
-    ['name', 'type', 'scatters', 'installAnts', 'fiveG', 'sec', 'location'].forEach(k => {
+    ['type', 'scatters', 'location'].forEach(k => {
       if (out[k] !== undefined && out[k] !== null) meta[k] = out[k];
     });
     out.notes = notes + (notes ? '\n' : '') + '[[site-config:v2:' + encodeURIComponent(JSON.stringify(meta)) + ']]';
