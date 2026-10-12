@@ -116,6 +116,15 @@ h2:first-child { margin-top: 0; }
 .kpi.main b { font-size: 26px; color: var(--accent); }
 .sum tbody tr:nth-child(even) td { background: color-mix(in srgb, var(--surface-2) 60%, transparent); }
 .sum td.total { font-weight: 700; }
+.site-rates { margin-top: 24px; padding: 16px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface-2); }
+.site-rates h2 { margin: 0 0 6px; }
+.site-rates > .note { margin: 6px 0 12px; }
+.rate-totals { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 12px 0 16px; }
+.rate-totals > div { min-width: 0; display: grid; gap: 5px; padding: 12px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+.rate-totals span { color: var(--muted); font-size: 12px; }
+.rate-totals b { font-size: 18px; }
+.rate-totals .rate-known-total { border-color: var(--accent); }
+.site-rates-table td.total { font-weight: 700; }
 
 /* نموذج */
 dialog { border: 1px solid var(--line); border-radius: 14px; padding: 0; width: min(560px, calc(100vw - 24px)); background: var(--surface); color: var(--ink); max-height: calc(100dvh - 24px); }
@@ -184,6 +193,10 @@ dialog.settings-dialog .dlg-in { max-height: calc(100dvh - 32px); overflow-y: au
   .kpi.main { grid-column: 1 / -1; }
   .kpi b { font-size: 18px; text-align: start; }
   .kpi.main b { font-size: 25px; }
+  .site-rates { padding: 12px; }
+  .rate-totals { grid-template-columns: 1fr; gap: 7px; }
+  .rate-totals > div { grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
+  .rate-totals b { font-size: 16px; }
   dialog { width: 100%; max-width: none; max-height: calc(100dvh - 12px); margin: auto 0 0; border-radius: 16px 16px 0 0; border-bottom: 0; }
   dialog.settings-dialog { width: 100%; max-height: calc(100dvh - 12px); }
   .dlg-in { max-height: calc(100dvh - 12px); overflow-y: auto; overscroll-behavior: contain; padding: 18px 16px calc(16px + env(safe-area-inset-bottom, 0px)); gap: 12px; }
