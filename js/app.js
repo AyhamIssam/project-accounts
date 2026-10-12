@@ -590,42 +590,34 @@
     }
     function siteMonths() {
       return h('div', { class: 'field' }, h('label', null, 'بيانات وإعدادات كل موقع'),
-        h('p', { class: 'note' }, 'أدخل بيانات الموقع وحدد موقعه الجغرافي. اترك الخانات غير المتوفرة فارغة، واختر عدد السكاتر من 3 إلى 5.'),
+        h('p', { class: 'note' }, 'حدد شهر الحساب، نوع الموقع، مكانه، وعدد السكاتر من 3 إلى 5.'),
         state.sites.length ? h('div', { class: 'tbl-wrap' }, h('table', { class: 'tbl cards' },
-          h('thead', null, h('tr', null, h('th', null, 'رقم الموقع'), h('th', null, 'اسم الموقع'), h('th', null, 'الشهر'), h('th', null, 'الملاحظات'), h('th', null, 'النوع'), h('th', null, 'الموقع الجغرافي'), h('th', null, 'Install ANTs'), h('th', null, '5G'), h('th', null, '# of SEC'), h('th', null, 'السكاتر'), h('th', null, ''))),
+          h('thead', null, h('tr', null, h('th', null, 'رقم الموقع'), h('th', null, 'شهر الحساب'), h('th', null, 'النوع'), h('th', null, 'الموقع'), h('th', null, 'عدد السكاتر'), h('th', null, ''))),
           h('tbody', null, sortSites(state.sites.map(s => s.id)).map(id => {
             const site = state.sites.find(s => s.id === id);
-            const nameInput = h('input', { type: 'text', value: site.name || '', 'aria-label': 'اسم الموقع ' + id });
             const monthInput = h('input', { type: 'month', value: site.month || '', 'aria-label': 'شهر الموقع ' + id });
-            const notesInput = h('textarea', { 'aria-label': 'ملاحظات الموقع ' + id }, site.notes || '');
             const typeInput = h('select', { value: site.type || '', 'aria-label': 'نوع الموقع ' + id },
               h('option', { value: '' }, 'اختر النوع'), h('option', { value: 'Thinlayer' }, 'Thinlayer'), h('option', { value: 'Swap' }, 'Swap'), h('option', { value: 'Survey' }, 'Survey'));
             const locationInput = h('select', { value: site.location || '', 'aria-label': 'موقع الموقع الجغرافي ' + id },
               h('option', { value: '' }, 'اختر'), h('option', { value: 'inside' }, 'جوا عمان'), h('option', { value: 'outside' }, 'برا عمان'));
-            const antsInput = h('input', { type: 'number', min: '0', step: '1', value: site.installAnts === undefined ? '' : site.installAnts, 'aria-label': 'Install ANTs للموقع ' + id });
-            const fiveGInput = h('input', { type: 'number', min: '0', step: '1', value: site.fiveG === undefined ? '' : site.fiveG, 'aria-label': '5G للموقع ' + id });
-            const secInput = h('input', { type: 'number', min: '0', step: '1', value: site.sec === undefined ? '' : site.sec, 'aria-label': '# of SEC للموقع ' + id });
-            const scatterInput = h('select', { value: site.scatters ? String(site.scatters) : site.type === 'Survey' ? '' : '3', 'aria-label': 'عدد السكاتر للموقع ' + id },
-              h('option', { value: '' }, '—'), [3, 4, 5].map(n => h('option', { value: String(n) }, n)));
+            const scatterInput = h('select', { value: site.scatters ? String(site.scatters) : '3', 'aria-label': 'عدد السكاتر للموقع ' + id },
+              [3, 4, 5].map(n => h('option', { value: String(n) }, n)));
             const save = h('button', { class: 'btn small', type: 'button', onclick: async () => {
               if (monthInput.value && !/^\d{4}-(0[1-9]|1[0-2])$/.test(monthInput.value)) return toast('اختر شهرًا صحيحًا', true);
               if (!typeInput.value) return toast('اختر نوع الموقع', true);
-              if (typeInput.value !== 'Survey' && !scatterInput.value) return toast('اختر عدد السكاتر من 3 إلى 5', true);
-              if ([antsInput, fiveGInput, secInput].some(input => input.value && (!Number.isInteger(Number(input.value)) || Number(input.value) < 0))) return toast('أدخل أعدادًا صحيحة غير سالبة', true);
               if (!locationInput.value) return toast('اختر جوا عمان أو برا عمان', true);
               save.disabled = true;
               try {
-                const updated = await Api.update('sites', Object.assign({}, site, { name: nameInput.value.trim(), notes: notesInput.value.trim(), month: monthInput.value, type: typeInput.value,
-                  location: locationInput.value, installAnts: antsInput.value === '' ? '' : Number(antsInput.value), fiveG: fiveGInput.value === '' ? '' : Number(fiveGInput.value),
-                  sec: secInput.value === '' ? '' : Number(secInput.value), scatters: scatterInput.value === '' ? '' : Number(scatterInput.value) }));
-                Object.assign(site, updated); render(); toast('تم حفظ بيانات الموقع');
+                const updated = await Api.update('sites', Object.assign({}, site, { month: monthInput.value, type: typeInput.value,
+                  location: locationInput.value, scatters: Number(scatterInput.value) }));
+                Object.assign(site, updated); render(); toast('تم حفظ إعدادات الموقع');
               } catch (e) { toast(e.message, true); }
               finally { save.disabled = false; }
             } }, 'حفظ');
             return h('tr', null, h('td', { 'data-label': 'رقم الموقع' }, chip(id)),
-              h('td', { 'data-label': 'اسم الموقع' }, nameInput), h('td', { 'data-label': 'الشهر' }, monthInput), h('td', { 'data-label': 'الملاحظات' }, notesInput),
-              h('td', { 'data-label': 'النوع' }, typeInput), h('td', { 'data-label': 'الموقع الجغرافي' }, locationInput), h('td', { 'data-label': 'Install ANTs' }, antsInput),
-              h('td', { 'data-label': '5G' }, fiveGInput), h('td', { 'data-label': '# of SEC' }, secInput), h('td', { 'data-label': 'السكاتر' }, scatterInput), h('td', { class: 'act' }, save));
+              h('td', { 'data-label': 'شهر الحساب' }, monthInput),
+              h('td', { 'data-label': 'النوع' }, typeInput), h('td', { 'data-label': 'الموقع' }, locationInput),
+              h('td', { 'data-label': 'عدد السكاتر' }, scatterInput), h('td', { class: 'act' }, save));
           })))) : h('p', { class: 'note' }, 'أضف المواقع أولًا.'));
     }
 
@@ -637,7 +629,7 @@
             v = normSite(v);
             if (!validSite(v)) return toast(SITE_ERR, true);
             if (siteExists(v)) return toast('الموقع موجود مسبقاً', true);
-            try { state.sites.push(await Api.add('sites', { id: v, notes: '', month: '', type: '', scatters: 3 })); draw(); render(); } catch (e) { toast(e.message, true); }
+            try { state.sites.push(await Api.add('sites', { id: v, notes: '', month: '', type: '', scatters: 3, location: '' })); draw(); render(); } catch (e) { toast(e.message, true); }
           },
           async it => {
             if (!confirm('حذف الموقع "' + it.id + '" من القائمة؟ السجلات القديمة تبقى كما هي.')) return;
