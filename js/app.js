@@ -314,6 +314,39 @@
         h('td', { class: 'n', 'data-label': 'الإجمالي' }, money(tot.total)))))));
     if (!rows.length && !g) root.append(h('div', { class: 'empty' }, 'لا توجد بيانات بعد.'));
     root.append(h('p', { class: 'note' }, 'العام يتوزع بالتساوي على جميع المواقع، والشهري على المواقع التابعة للشهر المختار في المواقع والقوائم. المبالغ التي لا توجد لها مواقع تبقى في صف "غير موزّع". المقاول محسوب بعد الخصومات والدفعات والسلف.'));
+
+    const rateRows = sortSites(state.sites.map(s => s.id)).map(id => {
+      const site = state.sites.find(s => s.id === id);
+      const isThinlayer = site.type === 'Thinlayer';
+      const base = isThinlayer ? (Number(site.scatters) <= 3 ? 571.04 : 717.12) : null;
+      const transport = site.location === 'outside' ? 83 : site.location === 'inside' ? 0 : null;
+      const known = (base || 0) + (transport || 0);
+      return { site, base, transport, known, complete: base !== null && transport !== null };
+    });
+    const thinlayerTotal = rateRows.reduce((sum, r) => sum + (r.base || 0), 0);
+    const transportTotal = rateRows.reduce((sum, r) => sum + (r.transport || 0), 0);
+    const knownTotal = thinlayerTotal + transportTotal;
+    root.append(h('section', { class: 'site-rates', 'aria-labelledby': 'site-rates-title' },
+      h('h2', { id: 'site-rates-title' }, 'أسعار المواقع الإضافية'),
+      h('p', { class: 'note' }, 'حسبة منفصلة عن إجمالي المصروف المسجل أعلاه؛ Thinlayer: 571.04 د.أ لثلاثة سكاتر، و717.12 د.أ لأكثر من ثلاثة. الموقع خارج عمان عليه 83 د.أ نقل إضافية.'),
+      h('div', { class: 'rate-totals' },
+        h('div', null, h('span', null, 'أسعار Thinlayer'), h('b', { class: 'num' }, fmt(thinlayerTotal) + ' ' + CUR)),
+        h('div', null, h('span', null, 'نقل المواقع خارج عمان'), h('b', { class: 'num' }, fmt(transportTotal) + ' ' + CUR)),
+        h('div', { class: 'rate-known-total' }, h('span', null, 'مجموع الأسعار المحددة'), h('b', { class: 'num' }, fmt(knownTotal) + ' ' + CUR))),
+      h('div', { class: 'tbl-wrap' }, h('table', { class: 'tbl cards site-rates-table' },
+        h('thead', null, h('tr', null, h('th', null, 'الموقع'), h('th', null, 'النوع والسكاتر'), h('th', { class: 'n' }, 'سعر Thinlayer'), h('th', { class: 'n' }, 'نقل خارج عمان'), h('th', { class: 'n' }, 'المبلغ المحدد'))),
+        h('tbody', null, rateRows.map(({ site, base, transport, known, complete }) => {
+          const typeLabel = site.type ? site.type + (site.type === 'Thinlayer' ? ' · ' + (site.scatters || 3) + ' سكاتر' : '') : 'حدد النوع';
+          const baseLabel = base !== null ? money(base) : site.type === 'Swap' ? 'السعر غير محدد' : '—';
+          const transportLabel = transport !== null ? money(transport) : 'حدد جوا/برا عمان';
+          return h('tr', null,
+            h('td', { 'data-label': 'الموقع' }, chip(site.id)),
+            h('td', { 'data-label': 'النوع والسكاتر' }, typeLabel),
+            h('td', { class: 'n', 'data-label': 'سعر Thinlayer' }, baseLabel),
+            h('td', { class: 'n', 'data-label': 'نقل خارج عمان' }, transportLabel),
+            h('td', { class: 'n total', 'data-label': 'المبلغ المحدد' }, complete || known ? money(known) : '—'));
+        })))),
+      h('p', { class: 'note' }, 'سعر Swap الأساسي غير مضاف لأن سعره غير وارد ضمن الأسعار المحددة. المواقع التي لم يكتمل تحديد نوعها أو موقعها لا تُقدّر لها قيمة مجهولة.')));
     return root;
   }
 
