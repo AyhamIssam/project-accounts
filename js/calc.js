@@ -138,8 +138,21 @@
     // الزيادة المدفوعة لشخص لا تسدد مستحقات شخص آخر.
     const remaining = Math.max(0, round3(contractorDue)) + Array.from(people.values())
       .reduce((sum, p) => sum + Math.max(0, round3(p.earned - p.paid)), 0);
-    return { paid: round3(paid), remaining: round3(remaining) };
+    const allocated = allocate(st).lines;
+    const sources = ['company', 'contractor', 'staff', 'car', 'misc'];
+    const records = new Map(sources.flatMap(src => (st[src] || []).map(r => [src + '|' + r.id, r])));
+    const recordedExpense = allocated.filter(line => {
+      const rec = records.get(line.src + '|' + line.id);
+      return !rec || throughToday(rec);
+    }).reduce((sum, line) => sum + line.amount, 0);
+    const paidTotal = round3(paid), remainingTotal = round3(remaining);
+    return {
+      paid: paidTotal,
+      remaining: remainingTotal,
+      companyDue: round3(recordedExpense - paidTotal - remainingTotal)
+    };
   }
 
   window.Calc = { allocate, cashSummary, split, ids, round3 };
 })();
+
