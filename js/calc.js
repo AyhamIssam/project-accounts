@@ -41,9 +41,11 @@
       distributeMonth('company', r, String(r.date || '').slice(0, 7), r.date, Number(r.amount) || 0);
     });
 
-    // 1) المقاول: الحساب موجب، والخصم والدفعة والسلفة تُطرح من رصيده.
+    // 1) المقاول: الحساب تكلفة، والخصم يخفضها. الدفعات والسلف تسديد نقدي
+    // لا تخفض المصروف المسجل، لأنها تُحتسب في ملخص المدفوع.
     st.contractor.forEach(r => {
       const a = Number(r.amount) || 0;
+      if (r.kind === CKIND.PAYMENT || r.kind === CKIND.ADVANCE) return;
       const amount = r.kind === CKIND.ACCOUNT ? a : -a;
       if (r.site) push('contractor', r, r.site, r.date, amount);
       else distributeGeneral('contractor', r, r.date, amount);
@@ -138,18 +140,17 @@
     // الزيادة المدفوعة لشخص لا تسدد مستحقات شخص آخر.
     const remaining = Math.max(0, round3(contractorDue)) + Array.from(people.values())
       .reduce((sum, p) => sum + Math.max(0, round3(p.earned - p.paid)), 0);
-    const allocated = allocate(st).lines;
-    const sources = ['company', 'contractor', 'staff', 'car', 'misc'];
-    const records = new Map(sources.flatMap(src => (st[src] || []).map(r => [src + '|' + r.id, r])));
-    const recordedExpense = allocated.filter(line => {
-      const rec = records.get(line.src + '|' + line.id);
-      return !rec || throughToday(rec);
-    }).reduce((sum, line) => sum + line.amount, 0);
+    const companyDeductions = (st.company || [])
+      .filter(r => throughToday(r) && r.kind === COMPANY_KIND.DEDUCT)
+      .reduce((sum, r) => sum + amount(r), 0);
+    const contractorDeductions = (st.contractor || [])
+      .filter(r => throughToday(r) && r.kind === CKIND.DEDUCT)
+      .reduce((sum, r) => sum + amount(r), 0);
     const paidTotal = round3(paid), remainingTotal = round3(remaining);
     return {
       paid: paidTotal,
       remaining: remainingTotal,
-      companyDue: round3(recordedExpense - paidTotal - remainingTotal)
+      companyDue: round3(companyDeductions - contractorDeductions)
     };
   }
 
