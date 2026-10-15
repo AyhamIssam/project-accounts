@@ -284,14 +284,15 @@
 
     root.append(h('div', { class: 'toolbar' }, monthFilter(f)));
     const cash = Calc.cashSummary(state, todayISO());
-    root.append(h('div', { class: 'cash-summary', 'aria-label': 'ملخص المدفوع والمتبقي ومستحقات الشركة حتى اليوم' },
+    root.append(h('div', { class: 'cash-summary', 'aria-label': 'ملخص المدفوع والمتبقي ومستحقات الشركة الرئيسية حتى اليوم' },
       h('small', { class: 'cash-period' }, 'حتى اليوم · كل الأشهر'),
       h('div', { title: 'دفعات وسلف المقاول والفنيين والمهندسين، والمصاريف العشوائية والسيارة غير المرتبطة بشخص.' },
         h('span', null, 'المدفوع فعليًا'), h('b', { class: 'num' }, fmt(cash.paid) + ' ' + CUR)),
       h('div', { title: 'المتبقي للمقاول والفنيين والمهندسين بعد الدفعات والسلف، شامل السيارة المرتبطة بالشخص.' },
         h('span', null, 'المتبقي للدفع'), h('b', { class: 'num' }, fmt(cash.remaining) + ' ' + CUR)),
       h('div', { class: 'company-balance', title: 'خصومات الشركة الرئيسية عليك ناقص خصومات المقاول. الموجب مستحق للشركة، والسالب رصيد لصالحك.' },
-        h('span', null, 'مستحقات للشركة'), h('b', { class: 'num' + (cash.companyDue < 0 ? ' neg' : '') }, fmt(cash.companyDue) + ' ' + CUR))));
+        h('span', null, 'مستحقات الشركة الرئيسية'), h('b', { class: 'num' + (cash.companyDue < 0 ? ' neg' : '') }, fmt(cash.companyDue) + ' ' + CUR)),
+      h('small', { class: 'cash-note' }, 'الحسبة: خصومات الشركة الرئيسية عليك − خصومات المقاول عليك. مستقلة عن إجمالي المصروف.')));
     root.append(h('div', { class: 'kpis' },
       h('div', { class: 'kpi main' }, h('span', null, 'إجمالي المصروف'), h('b', null, fmt(tot.total)), h('span', null, CUR)),
       SRC.map(([k, t]) => h('div', { class: 'kpi' }, h('span', null, t), h('b', null, fmt(tot[k]))))));
