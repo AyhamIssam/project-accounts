@@ -319,8 +319,9 @@
       const site = state.sites.find(s => s.id === id);
       const isThinlayer = site.type === 'Thinlayer';
       const scatters = Number(site.scatters) || 3;
-      const base = isThinlayer ? (scatters <= 3 ? 571.04 : 717.12) : null;
-      const transport = site.location === 'outside' ? 83 : site.location === 'inside' ? 0 : null;
+      const from83To79 = amount => Math.round((amount * 79 / 83 + Number.EPSILON) * 100) / 100;
+      const base = isThinlayer ? from83To79(scatters <= 3 ? 571.04 : 717.12) : null;
+      const transport = site.location === 'outside' ? from83To79(83) : site.location === 'inside' ? 0 : null;
       const known = (base || 0) + (transport || 0);
       return { site, scatters, base, transport, known, complete: base !== null && transport !== null };
     });
@@ -329,7 +330,7 @@
     const knownTotal = thinlayerTotal + transportTotal;
     root.append(h('section', { class: 'site-rates', 'aria-labelledby': 'site-rates-title' },
       h('h2', { id: 'site-rates-title' }, 'أسعار المواقع الإضافية'),
-      h('p', { class: 'note' }, 'حسبة منفصلة عن إجمالي المصروف المسجل أعلاه؛ Thinlayer: 571.04 د.أ لثلاثة سكاتر، و717.12 د.أ لأكثر من ثلاثة. الموقع خارج عمان عليه 83 د.أ نقل إضافية.'),
+      h('p', { class: 'note' }, 'حسبة منفصلة عن إجمالي المصروف المسجل أعلاه. عُدّلت الأسعار الظاهرة من أساس 83 إلى 79: Thinlayer لثلاثة سكاتر 543.52 د.أ، ولأكثر من ثلاثة 682.56 د.أ؛ وزيادة الموقع خارج عمان 79 د.أ.'),
       h('div', { class: 'rate-totals' },
         h('div', null, h('span', null, 'أسعار Thinlayer'), h('b', { class: 'num' }, fmt(thinlayerTotal) + ' ' + CUR)),
         h('div', null, h('span', null, 'نقل المواقع خارج عمان'), h('b', { class: 'num' }, fmt(transportTotal) + ' ' + CUR)),
